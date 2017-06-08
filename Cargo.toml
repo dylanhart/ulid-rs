@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["dylanhart <dylan96hart@gmail.com>"]
 
 license = "MIT"
-license-file = "LICENSE"
+readme = "README.md"
 
 description = "a Universally Unique Lexicographically Sortable Identifier implementation"
 keywords = ["ulid", "uuid", "sortable", "identifier"]
