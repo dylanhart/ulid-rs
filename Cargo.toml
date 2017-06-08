@@ -3,8 +3,13 @@ name = "ulid"
 version = "0.1.0"
 authors = ["dylanhart <dylan96hart@gmail.com>"]
 
+license = "MIT"
+license-file = "LICENSE"
+
 description = "a Universally Unique Lexicographically Sortable Identifier implementation"
 keywords = ["ulid", "uuid", "sortable", "identifier"]
+
+repository = "https://github.com/dylanhart/ulid-rs"
 
 [dependencies]
 byteorder = "1.0.0"
