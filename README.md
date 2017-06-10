@@ -9,11 +9,13 @@ Universally Unique Lexicographically Sortable Identifiers.
 // Generate a ulid
 let ulid = Ulid::new();
 
-// Create from a String
-let ulid = Ulid::from_string("...");
-
 // Generate a string for a ulid
-let s = ulid::to_string()
+let s = ulid.to_string();
+
+// Create from a String
+let res = Ulid::from_string(&s);
+
+assert_eq!(ulid, res.unwrap());
 ```
 
 [ulid]: https://github.com/alizain/ulid

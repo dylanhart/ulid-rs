@@ -14,9 +14,12 @@ lazy_static! {
 	};
 }
 
+/// An encoding error that can occur when decoding a base32 string
 #[derive(Debug, PartialEq)]
 pub enum EncodingError {
+	/// The length of the string does not match the expected length
 	InvalidLength,
+	/// A non-base32 character was found
 	InvalidChar,
 }
 
