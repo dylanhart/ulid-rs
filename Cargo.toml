@@ -16,3 +16,11 @@ byteorder = "1.0.0"
 chrono = "0.3"
 lazy_static = "0.2.8"
 rand = "0.3"
+
+[dev-dependencies]
+bencher = "0.1"
+
+[[bench]]
+name = "bench"
+path = "benches/bench.rs"
+harness = false
