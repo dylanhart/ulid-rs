@@ -1,6 +1,6 @@
 [package]
 name = "ulid"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["dylanhart <dylan96hart@gmail.com>"]
 
 license = "MIT"
