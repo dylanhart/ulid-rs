@@ -41,7 +41,7 @@ pub use base32::EncodingError;
 /// remaining 80 are random. The first 48 provide for lexicographic sorting and
 /// the remaining 80 ensure that the identifier is unique.
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
-pub struct Ulid(u64, u64);
+pub struct Ulid(pub u64, pub u64);
 
 impl Ulid {
 
@@ -82,6 +82,11 @@ impl Ulid {
 		return UTC.timestamp(secs as i64, (millis*1000000) as u32);
 	}
 
+	/// Gets the timestamp section of this ulid
+	pub fn timestamp_ms(&self) -> u64 {
+		return self.0 >> 16;
+	}
+
 	/// Creates a Crockford Base32 encoded string that represents this Ulid
 	pub fn to_string(&self) -> String {
 		return base32::encode(self.0, self.1);
@@ -92,6 +97,18 @@ impl Ulid {
 impl <'a> Into<String> for &'a Ulid {
 	fn into(self) -> String {
 		self.to_string()
+	}
+}
+
+impl From<(u64, u64)> for Ulid {
+	fn from(tuple: (u64, u64)) -> Self {
+		Ulid(tuple.0, tuple.1)
+	}
+}
+
+impl Into<(u64, u64)> for Ulid {
+	fn into(self) -> (u64, u64) {
+		(self.0, self.1)
 	}
 }
 
@@ -139,5 +156,14 @@ mod tests {
 		println!("{:?}, {:?}", dt, ulid.datetime());
 		assert!(ulid.datetime() <= dt);
 		assert!(ulid.datetime() + Duration::milliseconds(1) >= dt);
+	}
+
+	#[test]
+	fn test_timestamp() {
+		let dt = UTC::now();
+		let ulid = Ulid::from_datetime(dt);
+		let ts = dt.timestamp() as u64 * 1000 + dt.timestamp_subsec_millis() as u64;
+
+		assert_eq!(ulid.timestamp_ms(), ts);
 	}
 }
