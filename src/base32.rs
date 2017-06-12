@@ -1,8 +1,8 @@
 const ALPHABET: &'static [u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 lazy_static! {
-	static ref LOOKUP: [Option<u8>; 255] = {
-		let mut lookup = [None; 255];
+	static ref LOOKUP: [Option<u8>; 256] = {
+		let mut lookup = [None; 256];
 		for (i, &c) in ALPHABET.iter().enumerate() {
 			lookup[c as usize] = Some(i as u8);
 			if !(c as char).is_numeric() {
