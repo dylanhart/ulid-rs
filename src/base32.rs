@@ -23,53 +23,60 @@ pub enum EncodingError {
 	InvalidChar,
 }
 
-pub fn encode(bytes: &[u8; 16]) -> String {
-	let mut buffer: [u8; 26] = [0; 26];
+pub fn encode(mut msb: u64, mut lsb: u64) -> String {
+	let mut buffer: [u8; 26] = [ALPHABET[0]; 26];
 
-	for i in 0..26 {
-		let byte = (i * 5) / 8;
-		let offset = ((i * 5) % 8) as u8;
+	for i in 0..12 {
+		buffer[25-i] = ALPHABET[(lsb & 0x1f) as usize];
+		lsb >>= 5;
+	}
 
-		// bits are contained within a byte or the very last byte
-		if offset <= 8 - 5 || byte == 15 {
-			buffer[25-i] = ALPHABET[((bytes[15 - byte] >> offset) & 0x1f) as usize];
-		} else {
-			buffer[25-i] = ALPHABET[((bytes[15 - byte] >> offset)
-				| ((bytes[15 - byte - 1] & ((1<<(offset-3))-1)) << (8-offset))) as usize];
-		}
+	buffer[13] = ALPHABET[(lsb | ((msb & 1) << 4)) as usize];
+	msb >>= 1;
+
+	for i in 0..13 {
+		buffer[12-i] = ALPHABET[(msb & 0x1f) as usize];
+		msb >>= 5;
 	}
 
 	return String::from_utf8(buffer.to_vec())
 		.expect("unexpected failure in base32 encode for ulid");
 }
 
-pub fn decode(encoded: &str) -> Result<[u8; 16], EncodingError> {
+pub fn decode(encoded: &str) -> Result<(u64, u64), EncodingError> {
 	if encoded.len() != 26 {
 		return Err(EncodingError::InvalidLength);
 	}
 
-	let mut buffer: [u8; 16] = [0; 16];
+	let mut msb: u64 = 0;
+	let mut lsb: u64;
 
-	for (i, c) in encoded.bytes().rev().enumerate() {
-		let byte = (i * 5) / 8;
-		let offset = ((i * 5) % 8) as u8;
+	let bytes = encoded.as_bytes();
 
-		if let Some(val) = LOOKUP[c as usize] {
-
-			if offset < 8 - 5 || byte == 15 {
-				buffer[15 - byte] |= val << offset;
-			} else {
-				buffer[15 - byte] |= val << offset;
-				buffer[15 - byte - 1] |= val >> (8-offset);
-			}
-
+	for i in 0..13 {
+		if let Some(val) = LOOKUP[bytes[i] as usize] {
+			msb = (msb << 5) | val as u64;
 		} else {
-			println!("{}", c);
 			return Err(EncodingError::InvalidChar);
 		}
 	}
 
-	return Ok(buffer);
+	if let Some(val) = LOOKUP[bytes[13] as usize] {
+		msb = (msb << 1) | ((val >> 4) & 0x1) as u64;
+		lsb = (val & 0xf) as u64;
+	} else {
+		return Err(EncodingError::InvalidChar);
+	}
+
+	for i in 0..12 {
+		if let Some(val) = LOOKUP[bytes[14 + i] as usize] {
+			lsb = (lsb << 5) | val as u64;
+		} else {
+			return Err(EncodingError::InvalidChar);
+		}
+	}
+
+	return Ok((msb, lsb));
 }
 
 #[cfg(test)]
@@ -78,23 +85,23 @@ mod tests {
 
 	#[test]
 	fn test_valid() {
-		assert_eq!(decode("21850M2GA1850M2GA1850M2GA1").unwrap(), [b'A'; 16]);
-		assert_eq!(encode(&[b'A'; 16]), "21850M2GA1850M2GA1850M2GA1");
+		let val = (0x4141414141414141, 0x4141414141414141);
+		assert_eq!(decode("21850M2GA1850M2GA1850M2GA1").unwrap(), val);
+		assert_eq!(encode(val.0, val.1), "21850M2GA1850M2GA1850M2GA1");
 
-		let val = [b'M', b'N', b'8', b'P', b'Q', b'D', b'J', b'Y', b'E', b'B',
-			b'4', b'3', b'Z', b'A', b'7', b'V'];
+		let val = (0x4d4e385051444a59, 0x454234335a413756);
 		let enc = "2D9RW50MA499CMAGHM6DD42DTP";
 		let lower = enc.to_lowercase();
-		assert_eq!(encode(&val), enc);
+		assert_eq!(encode(val.0, val.1), enc);
 		assert_eq!(decode(enc).unwrap(), val);
 		assert_eq!(decode(&lower).unwrap(), val);
 	}
 
 	#[test]
 	fn test_length() {
-		assert_eq!(encode(&[255; 16]).len(), 26);
-		assert_eq!(encode(&[26; 16]).len(), 26);
-		assert_eq!(encode(&[0; 16]).len(), 26);
+		assert_eq!(encode(0xffffffffffffffff, 0xffffffffffffffff).len(), 26);
+		assert_eq!(encode(0x0f0f0f0f0f0f0f0f, 0x0f0f0f0f0f0f0f0f).len(), 26);
+		assert_eq!(encode(0x0000000000000000, 0x0000000000000000).len(), 26);
 
 		assert_eq!(decode(""), Err(EncodingError::InvalidLength));
 		assert_eq!(decode("2D9RW50MA499CMAGHM6DD42DT"), Err(EncodingError::InvalidLength));
@@ -103,13 +110,13 @@ mod tests {
 
 	#[test]
 	fn test_chars() {
-		for ref c in encode(&[255; 16]).bytes() {
+		for ref c in encode(0xffffffffffffffff, 0xffffffffffffffff).bytes() {
 			assert!(ALPHABET.contains(c));
 		}
-		for ref c in encode(&[26; 16]).bytes() {
+		for ref c in encode(0x0f0f0f0f0f0f0f0f, 0x0f0f0f0f0f0f0f0f).bytes() {
 			assert!(ALPHABET.contains(c));
 		}
-		for ref c in encode(&[0; 16]).bytes() {
+		for ref c in encode(0x0000000000000000, 0x0000000000000000).bytes() {
 			assert!(ALPHABET.contains(c));
 		}
 

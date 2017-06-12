@@ -23,14 +23,12 @@
 //! assert_eq!(ulid, res.unwrap());
 //! ```
 
-extern crate byteorder;
 extern crate chrono;
 #[macro_use] extern crate lazy_static;
 extern crate rand;
 
 mod base32;
 
-use byteorder::{ByteOrder, BigEndian};
 use chrono::prelude::{DateTime, UTC, TimeZone};
 pub use base32::EncodingError;
 
@@ -43,7 +41,7 @@ pub use base32::EncodingError;
 /// remaining 80 are random. The first 48 provide for lexicographic sorting and
 /// the remaining 80 ensure that the identifier is unique.
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
-pub struct Ulid([u8; 16]);
+pub struct Ulid(u64, u64);
 
 impl Ulid {
 
@@ -56,18 +54,15 @@ impl Ulid {
 	///
 	/// This can be useful when migrating data to use Ulid identifiers
 	pub fn from_datetime<T: TimeZone>(datetime: DateTime<T>) -> Ulid {
-		let mut buffer: [u8; 16] = [0; 16];
-
 		let timestamp = datetime.timestamp() * 1000
 			+ (datetime.timestamp_subsec_millis() as i64);
 
 		let timebits = (timestamp & ((1<<48)-1)) as u64;
 
-		BigEndian::write_u16(&mut buffer[..2], ((timebits >> 32) & ((1<<16)-1)) as u16);
-		BigEndian::write_u32(&mut buffer[2..6], (timebits & ((1<<32)-1)) as u32);
-		buffer[6..].copy_from_slice(&rand::random::<[u8; 10]>());
-
-		return Ulid(buffer);
+		return Ulid(
+			timebits << 16 | rand::random::<u16>() as u64,
+			rand::random::<u64>()
+		);
 	}
 
 	/// Creates a Ulid from a Crockford Base32 encoded string
@@ -75,12 +70,13 @@ impl Ulid {
 	/// An EncodingError will be returned when the given string is not formated
 	/// properly.
 	pub fn from_string(encoded: &str) -> Result<Ulid, EncodingError> {
-		return base32::decode(encoded).map(Ulid);
+		return base32::decode(encoded)
+			.map(|(msb, lsb)| Ulid(msb, lsb));
 	}
 
 	/// Gets the datetime of when this Ulid was created accurate to 1ms
 	pub fn datetime(&self) -> DateTime<UTC> {
-		let stamp = BigEndian::read_u64(&self.0[..8]) >> 16;
+		let stamp = self.0 >> 16;
 		let secs = stamp / 1000;
 		let millis = stamp % 1000;
 		return UTC.timestamp(secs as i64, (millis*1000000) as u32);
@@ -88,7 +84,7 @@ impl Ulid {
 
 	/// Creates a Crockford Base32 encoded string that represents this Ulid
 	pub fn to_string(&self) -> String {
-		return base32::encode(&self.0);
+		return base32::encode(self.0, self.1);
 	}
 
 }
@@ -96,24 +92,6 @@ impl Ulid {
 impl <'a> Into<String> for &'a Ulid {
 	fn into(self) -> String {
 		self.to_string()
-	}
-}
-
-impl <'a> Into<(u64, u64)> for &'a Ulid {
-	fn into(self) -> (u64, u64) {
-		(
-			BigEndian::read_u64(&self.0[..8]),
-			BigEndian::read_u64(&self.0[8..]),
-		)
-	}
-}
-
-impl From<(u64, u64)> for Ulid {
-	fn from(tuple: (u64, u64)) -> Ulid {
-		let mut buffer = [0; 16];
-		BigEndian::write_u64(&mut buffer[..8], tuple.0);
-		BigEndian::write_u64(&mut buffer[8..], tuple.1);
-		return Ulid(buffer);
 	}
 }
 
@@ -138,10 +116,11 @@ mod tests {
 
 	#[test]
 	fn test_static() {
-		let s = Ulid([b'A'; 16]).to_string();
+		let s = Ulid(0x4141414141414141, 0x4141414141414141).to_string();
 		let u = Ulid::from_string(&s).unwrap();
 		assert_eq!(&s, "21850M2GA1850M2GA1850M2GA1");
-		assert_eq!(u.0, [b'A'; 16]);
+		assert_eq!(u.0, 0x4141414141414141);
+		assert_eq!(u.1, 0x4141414141414141);
 	}
 
 	#[test]
@@ -153,14 +132,7 @@ mod tests {
 	}
 
 	#[test]
-	fn test_conversions() {
-		let val = [b'M', b'N', b'8', b'P', b'Q', b'D', b'J', b'Y', b'E', b'B',
-			b'4', b'3', b'Z', b'A', b'7', b'V'];
-		let ulid = Ulid(val);
-
-		assert_eq!(Into::<(u64, u64)>::into(&ulid), (5570451706715851353, 4990608732242130774));
-		assert_eq!(Ulid::from((5570451706715851353, 4990608732242130774)), ulid);
-
+	fn test_datetime() {
 		let dt = UTC::now();
 		let ulid = Ulid::from_datetime(dt);
 

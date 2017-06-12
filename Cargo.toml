@@ -12,9 +12,8 @@ keywords = ["ulid", "uuid", "sortable", "identifier"]
 repository = "https://github.com/dylanhart/ulid-rs"
 
 [dependencies]
-byteorder = "1.0.0"
 chrono = "0.3"
-lazy_static = "0.2.8"
+lazy_static = "0.2"
 rand = "0.3"
 
 [dev-dependencies]
