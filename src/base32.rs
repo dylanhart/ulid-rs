@@ -1,3 +1,5 @@
+use std::fmt;
+
 const ALPHABET: &'static [u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 lazy_static! {
@@ -21,6 +23,16 @@ pub enum EncodingError {
 	InvalidLength,
 	/// A non-base32 character was found
 	InvalidChar,
+}
+
+impl fmt::Display for EncodingError {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		let text = match *self {
+			EncodingError::InvalidLength => "invalid length",
+			EncodingError::InvalidChar => "invalid character",
+		};
+		write!(f, "{}", text)
+	}
 }
 
 pub fn encode(mut msb: u64, mut lsb: u64) -> String {
