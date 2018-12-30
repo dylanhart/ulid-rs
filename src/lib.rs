@@ -30,7 +30,7 @@ extern crate rand;
 
 mod base32;
 
-use chrono::prelude::{DateTime, TimeZone, UTC};
+use chrono::prelude::{DateTime, TimeZone, Utc};
 use std::fmt;
 
 pub use base32::EncodingError;
@@ -43,18 +43,18 @@ pub use base32::EncodingError;
 /// Of the 128-bits, the first 48 are a unix timestamp in milliseconds. The
 /// remaining 80 are random. The first 48 provide for lexicographic sorting and
 /// the remaining 80 ensure that the identifier is unique.
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
-pub struct Ulid(pub u64, pub u64);
+#[derive(Debug, PartialOrd, PartialEq, Clone, Copy)]
+pub struct Ulid(pub u128);
 
 impl Ulid {
     /// Creates a new Ulid with the current time
     pub fn new() -> Ulid {
-        Ulid::from_datetime(UTC::now())
+        Ulid::from_datetime(Utc::now())
     }
 
     /// Creates a new Ulid using data from the given random number generator
     pub fn with_source<R: rand::Rng>(source: &mut R) -> Ulid {
-        Ulid::from_datetime_with_source(UTC::now(), source)
+        Ulid::from_datetime_with_source(Utc::now(), source)
     }
 
     /// Creates a new Ulid with the given datetime
@@ -70,14 +70,12 @@ impl Ulid {
         T: TimeZone,
         R: rand::Rng,
     {
-        let timestamp = datetime.timestamp() * 1000 + (datetime.timestamp_subsec_millis() as i64);
-
+        let timestamp = datetime.timestamp_millis();
         let timebits = (timestamp & ((1 << 48) - 1)) as u64;
 
-        return Ulid(
-            timebits << 16 | source.gen::<u16>() as u64,
-            source.gen::<u64>(),
-        );
+        let msb = timebits << 16 | source.gen::<u16>() as u64;
+        let lsb = source.gen::<u64>();
+        return Ulid::from((msb, lsb));
     }
 
     /// Creates a Ulid from a Crockford Base32 encoded string
@@ -85,25 +83,25 @@ impl Ulid {
     /// An EncodingError will be returned when the given string is not formated
     /// properly.
     pub fn from_string(encoded: &str) -> Result<Ulid, EncodingError> {
-        return base32::decode(encoded).map(|(msb, lsb)| Ulid(msb, lsb));
+        return base32::decode(encoded).map(Ulid);
     }
 
     /// Gets the datetime of when this Ulid was created accurate to 1ms
-    pub fn datetime(&self) -> DateTime<UTC> {
-        let stamp = self.0 >> 16;
+    pub fn datetime(&self) -> DateTime<Utc> {
+        let stamp = self.timestamp_ms();
         let secs = stamp / 1000;
         let millis = stamp % 1000;
-        return UTC.timestamp(secs as i64, (millis * 1000000) as u32);
+        return Utc.timestamp(secs as i64, (millis * 1000000) as u32);
     }
 
     /// Gets the timestamp section of this ulid
     pub fn timestamp_ms(&self) -> u64 {
-        return self.0 >> 16;
+        return (self.0 >> 80) as u64;
     }
 
     /// Creates a Crockford Base32 encoded string that represents this Ulid
     pub fn to_string(&self) -> String {
-        return base32::encode(self.0, self.1);
+        return base32::encode(self.0);
     }
 }
 
@@ -114,14 +112,26 @@ impl<'a> Into<String> for &'a Ulid {
 }
 
 impl From<(u64, u64)> for Ulid {
-    fn from(tuple: (u64, u64)) -> Self {
-        Ulid(tuple.0, tuple.1)
+    fn from((msb, lsb): (u64, u64)) -> Self {
+        Ulid((msb as u128) << 64 | (lsb as u128))
     }
 }
 
 impl Into<(u64, u64)> for Ulid {
     fn into(self) -> (u64, u64) {
-        (self.0, self.1)
+        ((self.0 >> 64) as u64, (self.0 & 0xffffffffffffffff) as u64)
+    }
+}
+
+impl From<u128> for Ulid {
+    fn from(value: u128) -> Ulid {
+        Ulid(value)
+    }
+}
+
+impl Into<u128> for Ulid {
+    fn into(self) -> u128 {
+        self.0
     }
 }
 
@@ -136,7 +146,6 @@ mod tests {
     use super::Ulid;
     use chrono::prelude::*;
     use chrono::Duration;
-    use rand;
 
     #[test]
     fn test_dynamic() {
@@ -152,19 +161,19 @@ mod tests {
 
     #[test]
     fn test_static() {
-        let s = Ulid(0x4141414141414141, 0x4141414141414141).to_string();
+        let s = Ulid(0x41414141414141414141414141414141).to_string();
         let u = Ulid::from_string(&s).unwrap();
         assert_eq!(&s, "21850M2GA1850M2GA1850M2GA1");
-        assert_eq!(u.0, 0x4141414141414141);
-        assert_eq!(u.1, 0x4141414141414141);
+        assert_eq!(u.0, 0x41414141414141414141414141414141);
     }
 
     #[test]
     fn test_source() {
-        let mut source = rand::os::OsRng::new().expect("could not create OS Rng");
+        use rand::rngs::OsRng;
+        let mut source = OsRng::new().expect("could not create OS Rng");
 
         let u1 = Ulid::with_source(&mut source);
-        let dt = UTC::now() + Duration::milliseconds(1);
+        let dt = Utc::now() + Duration::milliseconds(1);
         let u2 = Ulid::from_datetime_with_source(dt, &mut source);
         let u3 = Ulid::from_datetime_with_source(dt, &mut source);
 
@@ -174,7 +183,7 @@ mod tests {
 
     #[test]
     fn test_order() {
-        let dt = UTC::now();
+        let dt = Utc::now();
         let ulid1 = Ulid::from_datetime(dt);
         let ulid2 = Ulid::from_datetime(dt + Duration::milliseconds(1));
         assert!(ulid1 < ulid2);
@@ -182,7 +191,7 @@ mod tests {
 
     #[test]
     fn test_datetime() {
-        let dt = UTC::now();
+        let dt = Utc::now();
         let ulid = Ulid::from_datetime(dt);
 
         println!("{:?}, {:?}", dt, ulid.datetime());
@@ -192,7 +201,7 @@ mod tests {
 
     #[test]
     fn test_timestamp() {
-        let dt = UTC::now();
+        let dt = Utc::now();
         let ulid = Ulid::from_datetime(dt);
         let ts = dt.timestamp() as u64 * 1000 + dt.timestamp_subsec_millis() as u64;
 

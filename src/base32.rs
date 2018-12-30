@@ -35,60 +35,36 @@ impl fmt::Display for EncodingError {
     }
 }
 
-pub fn encode(mut msb: u64, mut lsb: u64) -> String {
+pub fn encode(mut value: u128) -> String {
     let mut buffer: [u8; 26] = [ALPHABET[0]; 26];
 
-    for i in 0..12 {
-        buffer[25 - i] = ALPHABET[(lsb & 0x1f) as usize];
-        lsb >>= 5;
-    }
-
-    buffer[13] = ALPHABET[(lsb | ((msb & 1) << 4)) as usize];
-    msb >>= 1;
-
-    for i in 0..13 {
-        buffer[12 - i] = ALPHABET[(msb & 0x1f) as usize];
-        msb >>= 5;
+    for i in 0..26 {
+        buffer[25 - i] = ALPHABET[(value & 0x1f) as usize];
+        value >>= 5;
     }
 
     return String::from_utf8(buffer.to_vec())
         .expect("unexpected failure in base32 encode for ulid");
 }
 
-pub fn decode(encoded: &str) -> Result<(u64, u64), EncodingError> {
+pub fn decode(encoded: &str) -> Result<u128, EncodingError> {
     if encoded.len() != 26 {
         return Err(EncodingError::InvalidLength);
     }
 
-    let mut msb: u64 = 0;
-    let mut lsb: u64;
+    let mut value: u128 = 0;
 
     let bytes = encoded.as_bytes();
 
-    for i in 0..13 {
+    for i in 0..26 {
         if let Some(val) = LOOKUP[bytes[i] as usize] {
-            msb = (msb << 5) | val as u64;
+            value = (value << 5) | val as u128;
         } else {
             return Err(EncodingError::InvalidChar);
         }
     }
 
-    if let Some(val) = LOOKUP[bytes[13] as usize] {
-        msb = (msb << 1) | ((val >> 4) & 0x1) as u64;
-        lsb = (val & 0xf) as u64;
-    } else {
-        return Err(EncodingError::InvalidChar);
-    }
-
-    for i in 0..12 {
-        if let Some(val) = LOOKUP[bytes[14 + i] as usize] {
-            lsb = (lsb << 5) | val as u64;
-        } else {
-            return Err(EncodingError::InvalidChar);
-        }
-    }
-
-    return Ok((msb, lsb));
+    return Ok(value);
 }
 
 #[cfg(test)]
@@ -97,23 +73,23 @@ mod tests {
 
     #[test]
     fn test_valid() {
-        let val = (0x4141414141414141, 0x4141414141414141);
+        let val = 0x41414141414141414141414141414141;
         assert_eq!(decode("21850M2GA1850M2GA1850M2GA1").unwrap(), val);
-        assert_eq!(encode(val.0, val.1), "21850M2GA1850M2GA1850M2GA1");
+        assert_eq!(encode(val), "21850M2GA1850M2GA1850M2GA1");
 
-        let val = (0x4d4e385051444a59, 0x454234335a413756);
+        let val = 0x4d4e385051444a59454234335a413756;
         let enc = "2D9RW50MA499CMAGHM6DD42DTP";
         let lower = enc.to_lowercase();
-        assert_eq!(encode(val.0, val.1), enc);
+        assert_eq!(encode(val), enc);
         assert_eq!(decode(enc).unwrap(), val);
         assert_eq!(decode(&lower).unwrap(), val);
     }
 
     #[test]
     fn test_length() {
-        assert_eq!(encode(0xffffffffffffffff, 0xffffffffffffffff).len(), 26);
-        assert_eq!(encode(0x0f0f0f0f0f0f0f0f, 0x0f0f0f0f0f0f0f0f).len(), 26);
-        assert_eq!(encode(0x0000000000000000, 0x0000000000000000).len(), 26);
+        assert_eq!(encode(0xffffffffffffffffffffffffffffffff).len(), 26);
+        assert_eq!(encode(0x0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f).len(), 26);
+        assert_eq!(encode(0x00000000000000000000000000000000).len(), 26);
 
         assert_eq!(decode(""), Err(EncodingError::InvalidLength));
         assert_eq!(
@@ -128,13 +104,13 @@ mod tests {
 
     #[test]
     fn test_chars() {
-        for ref c in encode(0xffffffffffffffff, 0xffffffffffffffff).bytes() {
+        for ref c in encode(0xffffffffffffffffffffffffffffffff).bytes() {
             assert!(ALPHABET.contains(c));
         }
-        for ref c in encode(0x0f0f0f0f0f0f0f0f, 0x0f0f0f0f0f0f0f0f).bytes() {
+        for ref c in encode(0x0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f).bytes() {
             assert!(ALPHABET.contains(c));
         }
-        for ref c in encode(0x0000000000000000, 0x0000000000000000).bytes() {
+        for ref c in encode(0x00000000000000000000000000000000).bytes() {
             assert!(ALPHABET.contains(c));
         }
 
