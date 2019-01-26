@@ -19,8 +19,12 @@
 //!
 //! // Create from a String
 //! let res = Ulid::from_string(&s);
-//!
 //! assert_eq!(ulid, res.unwrap());
+//!
+//! // Or using FromStr
+//! let res = s.parse();
+//! assert_eq!(ulid, res.unwrap());
+//!
 //! ```
 
 extern crate chrono;
@@ -30,6 +34,7 @@ extern crate rand;
 
 mod base32;
 
+use std::str::FromStr;
 use chrono::prelude::{DateTime, TimeZone, Utc};
 use std::fmt;
 
@@ -132,6 +137,14 @@ impl From<u128> for Ulid {
 impl Into<u128> for Ulid {
     fn into(self) -> u128 {
         self.0
+    }
+}
+
+impl FromStr for Ulid {
+    type Err = EncodingError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ulid::from_string(s)
     }
 }
 
