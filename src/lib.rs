@@ -78,9 +78,9 @@ impl Ulid {
         let timestamp = datetime.timestamp_millis();
         let timebits = (timestamp & ((1 << 48) - 1)) as u64;
 
-        let msb = timebits << 16 | source.gen::<u16>() as u64;
+        let msb = timebits << 16 | u64::from(source.gen::<u16>());
         let lsb = source.gen::<u64>();
-        return Ulid::from((msb, lsb));
+        Ulid::from((msb, lsb))
     }
 
     /// Creates a Ulid from a Crockford Base32 encoded string
@@ -88,7 +88,28 @@ impl Ulid {
     /// An EncodingError will be returned when the given string is not formated
     /// properly.
     pub fn from_string(encoded: &str) -> Result<Ulid, EncodingError> {
-        return base32::decode(encoded).map(Ulid);
+        base32::decode(encoded).map(Ulid)
+    }
+
+    /// The 'nil Ulid'.
+    ///
+    /// The nil Ulid is special form of Ulid that is specified to have
+    /// all 128 bits set to zero.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use ulid::Ulid;
+    ///
+    /// let ulid = Ulid::nil();
+    ///
+    /// assert_eq!(
+    ///     ulid.to_string(),
+    ///     "00000000000000000000000000"
+    /// );
+    /// ```
+    pub fn nil() -> Ulid {
+        Ulid(0)
     }
 
     /// Gets the datetime of when this Ulid was created accurate to 1ms
@@ -96,17 +117,38 @@ impl Ulid {
         let stamp = self.timestamp_ms();
         let secs = stamp / 1000;
         let millis = stamp % 1000;
-        return Utc.timestamp(secs as i64, (millis * 1000000) as u32);
+        Utc.timestamp(secs as i64, (millis * 1_000_000) as u32)
     }
 
     /// Gets the timestamp section of this ulid
     pub fn timestamp_ms(&self) -> u64 {
-        return (self.0 >> 80) as u64;
+        (self.0 >> 80) as u64
     }
 
     /// Creates a Crockford Base32 encoded string that represents this Ulid
     pub fn to_string(&self) -> String {
-        return base32::encode(self.0);
+        base32::encode(self.0)
+    }
+
+    /// Test if the Ulid is nil
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use ulid::Ulid;
+    ///
+    /// let nil = Ulid::nil();
+    ///
+    /// assert!(nil.is_nil());
+    /// ```
+    pub fn is_nil(&self) -> bool {
+        self.0 == 0u128
+    }
+}
+
+impl Default for Ulid {
+    fn default() -> Self {
+        Ulid::nil()
     }
 }
 
@@ -118,13 +160,16 @@ impl<'a> Into<String> for &'a Ulid {
 
 impl From<(u64, u64)> for Ulid {
     fn from((msb, lsb): (u64, u64)) -> Self {
-        Ulid((msb as u128) << 64 | (lsb as u128))
+        Ulid(u128::from(msb) << 64 | u128::from(lsb))
     }
 }
 
 impl Into<(u64, u64)> for Ulid {
     fn into(self) -> (u64, u64) {
-        ((self.0 >> 64) as u64, (self.0 & 0xffffffffffffffff) as u64)
+        (
+            (self.0 >> 64) as u64,
+            (self.0 & 0xffff_ffff_ffff_ffff) as u64,
+        )
     }
 }
 
