@@ -86,6 +86,27 @@ impl Ulid {
         base32::decode(encoded).map(Ulid)
     }
 
+    /// The 'nil Ulid'.
+    ///
+    /// The nil Ulid is special form of Ulid that is specified to have
+    /// all 128 bits set to zero.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use ulid::Ulid;
+    ///
+    /// let ulid = Ulid::nil();
+    ///
+    /// assert_eq!(
+    ///     ulid.to_string(),
+    ///     "00000000000000000000000000"
+    /// );
+    /// ```
+    pub fn nil() -> Ulid {
+        Ulid(0)
+    }
+
     /// Gets the datetime of when this Ulid was created accurate to 1ms
     pub fn datetime(&self) -> DateTime<Utc> {
         let stamp = self.timestamp_ms();
@@ -102,6 +123,27 @@ impl Ulid {
     /// Creates a Crockford Base32 encoded string that represents this Ulid
     pub fn to_string(&self) -> String {
         base32::encode(self.0)
+    }
+
+    /// Test if the Ulid is nil
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use ulid::Ulid;
+    ///
+    /// let nil = Ulid::nil();
+    ///
+    /// assert!(nil.is_nil());
+    /// ```
+    pub fn is_nil(&self) -> bool {
+        self.0 == 0u128
+    }
+}
+
+impl Default for Ulid {
+    fn default() -> Self {
+        Ulid::nil()
     }
 }
 
