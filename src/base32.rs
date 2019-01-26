@@ -43,8 +43,7 @@ pub fn encode(mut value: u128) -> String {
         value >>= 5;
     }
 
-    String::from_utf8(buffer.to_vec())
-        .expect("unexpected failure in base32 encode for ulid")
+    String::from_utf8(buffer.to_vec()).expect("unexpected failure in base32 encode for ulid")
 }
 
 pub fn decode(encoded: &str) -> Result<u128, EncodingError> {

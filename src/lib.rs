@@ -161,7 +161,10 @@ impl From<(u64, u64)> for Ulid {
 
 impl Into<(u64, u64)> for Ulid {
     fn into(self) -> (u64, u64) {
-        ((self.0 >> 64) as u64, (self.0 & 0xffff_ffff_ffff_ffff) as u64)
+        (
+            (self.0 >> 64) as u64,
+            (self.0 & 0xffff_ffff_ffff_ffff) as u64,
+        )
     }
 }
 
