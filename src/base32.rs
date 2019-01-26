@@ -1,6 +1,6 @@
 use std::fmt;
 
-const ALPHABET: &'static [u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+const ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 lazy_static! {
     static ref LOOKUP: [Option<u8>; 256] = {
@@ -43,8 +43,8 @@ pub fn encode(mut value: u128) -> String {
         value >>= 5;
     }
 
-    return String::from_utf8(buffer.to_vec())
-        .expect("unexpected failure in base32 encode for ulid");
+    String::from_utf8(buffer.to_vec())
+        .expect("unexpected failure in base32 encode for ulid")
 }
 
 pub fn decode(encoded: &str) -> Result<u128, EncodingError> {
@@ -58,13 +58,13 @@ pub fn decode(encoded: &str) -> Result<u128, EncodingError> {
 
     for i in 0..26 {
         if let Some(val) = LOOKUP[bytes[i] as usize] {
-            value = (value << 5) | val as u128;
+            value = (value << 5) | u128::from(val);
         } else {
             return Err(EncodingError::InvalidChar);
         }
     }
 
-    return Ok(value);
+    Ok(value)
 }
 
 #[cfg(test)]
