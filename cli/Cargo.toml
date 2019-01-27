@@ -1,0 +1,18 @@
+[package]
+name = "ulid-cli"
+version = "0.3.0"
+authors = ["dylanhart <dylan96hart@gmail.com>", "Kan-Ru Chen <kanru@kanru.info>"]
+
+license = "MIT"
+readme = "../README.md"
+
+description = "A command line interface for generating and inspecting ULIDs"
+keywords = ["ulid", "uuid", "sortable", "identifier"]
+
+repository = "https://github.com/dylanhart/ulid-rs"
+
+edition = "2018"
+
+[dependencies]
+structopt = "0.2"
+ulid = { version = "*", path = ".." }

@@ -23,3 +23,6 @@ bencher = "0.1"
 name = "bench"
 path = "benches/bench.rs"
 harness = false
+
+[workspace]
+members = ["cli"]
