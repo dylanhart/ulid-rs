@@ -319,7 +319,10 @@ mod tests {
         let mut gen = Generator::new();
         let ulid1 = gen.generate_from_datetime(dt).unwrap();
         let ulid2 = gen.generate_from_datetime(dt).unwrap();
+        let ulid3 = Ulid::from_datetime(dt + Duration::milliseconds(1));
         assert!(ulid1 < ulid2);
+        assert!(ulid2 < ulid3);
+        assert!(ulid2.timestamp_ms() < ulid3.timestamp_ms())
     }
 
     #[test]
