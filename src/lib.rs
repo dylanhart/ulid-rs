@@ -148,7 +148,7 @@ impl Ulid {
     /// increment the random number, make sure that the ts millis stays the same
     fn increment(&self) -> Option<Ulid> {
         let prev_ts_ms = self.timestamp_ms();
-        let next = Ulid(self.0 + 1);
+        let next = Ulid(self.0.wrapping_add(1));
         if prev_ts_ms == next.timestamp_ms() {
             Some(next)
         } else {
@@ -237,6 +237,10 @@ impl Generator {
     ///
     /// # Example
     /// ```rust
+    /// extern crate chrono;
+    /// use chrono::Utc;
+    /// use ulid::Generator;
+    ///
     /// let dt = Utc::now();
     /// let mut gen = Generator::new();
     /// let ulid1 = gen.generate_from_datetime(dt).unwrap();
@@ -252,7 +256,7 @@ impl Generator {
             if datetime.timestamp_millis() <= last_ms {
                 if let Some(next) = prev.increment() {
                     self.previous = Some(next);
-                    return Ok(next.clone())
+                    return Ok(next)
                 } else {
                     return Err(MonotonicError::Overflow)
                 }
@@ -260,7 +264,7 @@ impl Generator {
         }
         let next = Ulid::from_datetime(datetime);
         self.previous = Some(next);
-        Ok(next.clone())
+        Ok(next)
     }
 }
 
@@ -320,7 +324,7 @@ mod tests {
         let ulid1 = gen.generate_from_datetime(dt).unwrap();
         let ulid2 = gen.generate_from_datetime(dt).unwrap();
         let ulid3 = Ulid::from_datetime(dt + Duration::milliseconds(1));
-        assert!(ulid1 < ulid2);
+        assert_eq!(ulid1.0 + 1, ulid2.0);
         assert!(ulid2 < ulid3);
         assert!(ulid2.timestamp_ms() < ulid3.timestamp_ms())
     }
@@ -328,8 +332,16 @@ mod tests {
     #[test]
     fn test_increment() {
         let ulid = Ulid::from_string("01BX5ZZKBKZZZZZZZZZZZZZZZX").unwrap();
-        let ulid = ulid.increment().unwrap(); // 01BX5ZZKBKZZZZZZZZZZZZZZZY
-        let ulid = ulid.increment().unwrap(); // 01BX5ZZKBKZZZZZZZZZZZZZZZZ
+        let ulid = ulid.increment().unwrap();
+        assert_eq!("01BX5ZZKBKZZZZZZZZZZZZZZZY", ulid.to_string());
+        let ulid = ulid.increment().unwrap();
+        assert_eq!("01BX5ZZKBKZZZZZZZZZZZZZZZZ", ulid.to_string());
+        assert!(ulid.increment().is_none());
+    }
+
+    #[test]
+    fn test_increment_overflow() {
+        let ulid = Ulid(u128::max_value());
         assert!(ulid.increment().is_none());
     }
 
