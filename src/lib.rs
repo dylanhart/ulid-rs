@@ -51,6 +51,8 @@ pub use base32::EncodingError;
 #[derive(Debug, PartialOrd, PartialEq, Clone, Copy)]
 pub struct Ulid(pub u128);
 
+const MAX_RANDOM: u128 = (1 << 80) - 1;
+
 impl Ulid {
     /// Creates a new Ulid with the current time
     pub fn new() -> Ulid {
@@ -147,12 +149,10 @@ impl Ulid {
 
     /// increment the random number, make sure that the ts millis stays the same
     fn increment(&self) -> Option<Ulid> {
-        let prev_ts_ms = self.timestamp_ms();
-        let next = Ulid(self.0.wrapping_add(1));
-        if prev_ts_ms == next.timestamp_ms() {
-            Some(next)
-        } else {
+        if (self.0 & MAX_RANDOM) == MAX_RANDOM {
             None
+        } else {
+            Some(Ulid(self.0 + 1))
         }
     }
 }
