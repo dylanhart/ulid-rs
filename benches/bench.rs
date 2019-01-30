@@ -5,10 +5,15 @@ extern crate ulid;
 
 use bencher::Bencher;
 use chrono::Utc;
-use ulid::Ulid;
+use ulid::{Ulid, Generator};
 
 fn bench_new(b: &mut Bencher) {
     b.iter(|| Ulid::new());
+}
+
+fn bench_generator_generate(b: &mut Bencher) {
+    let mut gen = Generator::new();
+    b.iter(|| gen.generate().unwrap());
 }
 
 fn bench_from_time(b: &mut Bencher) {
@@ -29,6 +34,7 @@ fn bench_from_string(b: &mut Bencher) {
 benchmark_group!(
     ulid_perf,
     bench_new,
+    bench_generator_generate,
     bench_from_time,
     bench_to_string,
     bench_from_string

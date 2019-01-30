@@ -144,6 +144,17 @@ impl Ulid {
     pub fn is_nil(&self) -> bool {
         self.0 == 0u128
     }
+
+    /// increment the random number, make sure that the ts millis stays the same
+    fn increment(&self) -> Option<Ulid> {
+        const MAX_RANDOM: u128 = (1 << 80) - 1;
+
+        if (self.0 & MAX_RANDOM) == MAX_RANDOM {
+            None
+        } else {
+            Some(Ulid(self.0 + 1))
+        }
+    }
 }
 
 impl Default for Ulid {
@@ -199,11 +210,70 @@ impl fmt::Display for Ulid {
     }
 }
 
+/// generator for monotonic ulids
+pub struct Generator {
+    previous: Option<Ulid>
+}
+
+/// error while trying to generate a monotonic increment in the same millisecond
+#[derive(Debug, PartialEq)]
+pub enum MonotonicError {
+    /// would overflow into the next millisecond
+    Overflow,
+}
+
+impl Generator {
+    /// create a new ulid generator for monotonically ordered ulids
+    pub fn new() -> Generator { Generator { previous: None } }
+
+    /// use Utc::now to generate a monotonically ordered ulid
+    pub fn generate(&mut self) -> Result<Ulid, MonotonicError> {
+        let now = Utc::now();
+        self.generate_from_datetime(now)
+    }
+
+    /// generate a new monotonically ordered ulid. will use previous calls timestamp to
+    /// compare and make sure that each subsequent call is monotonically increasing
+    ///
+    /// # Example
+    /// ```rust
+    /// extern crate chrono;
+    /// use chrono::Utc;
+    /// use ulid::Generator;
+    ///
+    /// let dt = Utc::now();
+    /// let mut gen = Generator::new();
+    /// let ulid1 = gen.generate_from_datetime(dt).unwrap();
+    /// let ulid2 = gen.generate_from_datetime(dt).unwrap();
+    ///
+    /// assert!(ulid1 < ulid2);
+    /// ```
+    pub fn generate_from_datetime<T: TimeZone>(&mut self, datetime: DateTime<T>) -> Result<Ulid, MonotonicError> {
+        if let Some(prev) = self.previous {
+            let last_ms = prev.timestamp_ms() as i64;
+            // maybe time went backward, or it is the same ms.
+            // increment instead of generating a new random so that it is monotonic
+            if datetime.timestamp_millis() <= last_ms {
+                if let Some(next) = prev.increment() {
+                    self.previous = Some(next);
+                    return Ok(next)
+                } else {
+                    return Err(MonotonicError::Overflow)
+                }
+            }
+        }
+        let next = Ulid::from_datetime(datetime);
+        self.previous = Some(next);
+        Ok(next)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Ulid;
     use chrono::prelude::*;
     use chrono::Duration;
+    use super::Generator;
 
     #[test]
     fn test_dynamic() {
@@ -245,6 +315,34 @@ mod tests {
         let ulid1 = Ulid::from_datetime(dt);
         let ulid2 = Ulid::from_datetime(dt + Duration::milliseconds(1));
         assert!(ulid1 < ulid2);
+    }
+
+    #[test]
+    fn test_order_monotonic() {
+        let dt = Utc::now();
+        let mut gen = Generator::new();
+        let ulid1 = gen.generate_from_datetime(dt).unwrap();
+        let ulid2 = gen.generate_from_datetime(dt).unwrap();
+        let ulid3 = Ulid::from_datetime(dt + Duration::milliseconds(1));
+        assert_eq!(ulid1.0 + 1, ulid2.0);
+        assert!(ulid2 < ulid3);
+        assert!(ulid2.timestamp_ms() < ulid3.timestamp_ms())
+    }
+
+    #[test]
+    fn test_increment() {
+        let ulid = Ulid::from_string("01BX5ZZKBKZZZZZZZZZZZZZZZX").unwrap();
+        let ulid = ulid.increment().unwrap();
+        assert_eq!("01BX5ZZKBKZZZZZZZZZZZZZZZY", ulid.to_string());
+        let ulid = ulid.increment().unwrap();
+        assert_eq!("01BX5ZZKBKZZZZZZZZZZZZZZZZ", ulid.to_string());
+        assert!(ulid.increment().is_none());
+    }
+
+    #[test]
+    fn test_increment_overflow() {
+        let ulid = Ulid(u128::max_value());
+        assert!(ulid.increment().is_none());
     }
 
     #[test]
