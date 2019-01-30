@@ -1,9 +1,4 @@
-#[macro_use]
-extern crate bencher;
-extern crate chrono;
-extern crate ulid;
-
-use bencher::Bencher;
+use bencher::{benchmark_group, benchmark_main, Bencher};
 use chrono::Utc;
 use ulid::{Ulid, Generator};
 

@@ -1,4 +1,5 @@
 use std::fmt;
+use lazy_static::lazy_static;
 
 const ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
@@ -26,7 +27,7 @@ pub enum EncodingError {
 }
 
 impl fmt::Display for EncodingError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         let text = match *self {
             EncodingError::InvalidLength => "invalid length",
             EncodingError::InvalidChar => "invalid character",

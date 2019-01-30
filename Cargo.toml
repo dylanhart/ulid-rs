@@ -2,6 +2,7 @@
 name = "ulid"
 version = "0.3.0"
 authors = ["dylanhart <dylan96hart@gmail.com>"]
+edition = "2018"
 
 license = "MIT"
 readme = "README.md"
