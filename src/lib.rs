@@ -27,10 +27,7 @@
 //!
 //! ```
 
-extern crate chrono;
-#[macro_use]
-extern crate lazy_static;
-extern crate rand;
+use rand;
 
 mod base32;
 
@@ -38,7 +35,7 @@ use std::str::FromStr;
 use chrono::prelude::{DateTime, TimeZone, Utc};
 use std::fmt;
 
-pub use base32::EncodingError;
+pub use crate::base32::EncodingError;
 
 /// A Ulid is a unique 128-bit lexicographically sortable identifier
 ///
@@ -205,7 +202,7 @@ impl FromStr for Ulid {
 }
 
 impl fmt::Display for Ulid {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(f, "{}", self.to_string())
     }
 }
