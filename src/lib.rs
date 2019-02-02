@@ -31,9 +31,9 @@ use rand;
 
 mod base32;
 
-use std::str::FromStr;
 use chrono::prelude::{DateTime, TimeZone, Utc};
 use std::fmt;
+use std::str::FromStr;
 
 pub use crate::base32::EncodingError;
 
@@ -207,11 +207,6 @@ impl fmt::Display for Ulid {
     }
 }
 
-/// generator for monotonic ulids
-pub struct Generator {
-    previous: Option<Ulid>
-}
-
 /// error while trying to generate a monotonic increment in the same millisecond
 #[derive(Debug, PartialEq)]
 pub enum MonotonicError {
@@ -219,24 +214,54 @@ pub enum MonotonicError {
     Overflow,
 }
 
-impl Generator {
-    /// create a new ulid generator for monotonically ordered ulids
-    pub fn new() -> Generator { Generator { previous: None } }
+/// A Ulid generator that provides monotonically increasing Ulids
+pub struct Generator {
+    previous: Ulid,
+    source: Box<rand::RngCore>,
+}
 
-    /// use Utc::now to generate a monotonically ordered ulid
+impl Generator {
+    /// Create a new ulid generator for monotonically ordered ulids
+    pub fn new() -> Generator {
+        Self::with_source(rand::thread_rng())
+    }
+
+    /// Create a new ulid generator for monotonically ordered ulids using the given rng
+    ///
+    /// ```rust
+    /// # use ulid::Generator;
+    /// use rand::rngs::SmallRng;
+    /// use rand::FromEntropy;
+    ///
+    /// let mut gen = Generator::with_source(rand::rngs::SmallRng::from_entropy());
+    ///
+    /// let ulid1 = gen.generate().unwrap();
+    /// let ulid2 = gen.generate().unwrap();
+    ///
+    /// assert!(ulid1 < ulid2);
+    /// ```
+    pub fn with_source<R: rand::RngCore + 'static>(source: R) -> Generator {
+        Generator {
+            previous: Ulid::nil(),
+            source: Box::new(source),
+        }
+    }
+
+    /// Generate a new Ulid. Each call is guaranteed to provide a Ulid with a larger value than the
+    /// last call. If the random bits would overflow, this method will return an error.
     pub fn generate(&mut self) -> Result<Ulid, MonotonicError> {
         let now = Utc::now();
         self.generate_from_datetime(now)
     }
 
-    /// generate a new monotonically ordered ulid. will use previous calls timestamp to
-    /// compare and make sure that each subsequent call is monotonically increasing
+    /// Generate a new Ulid matching the given DateTime. Each call is guaranteed to provide a Ulid
+    /// with a larger value than the last call. If the random bits would overflow, this method will
+    /// return an error.
     ///
     /// # Example
     /// ```rust
-    /// extern crate chrono;
+    /// # use ulid::Generator;
     /// use chrono::Utc;
-    /// use ulid::Generator;
     ///
     /// let dt = Utc::now();
     /// let mut gen = Generator::new();
@@ -245,32 +270,39 @@ impl Generator {
     ///
     /// assert!(ulid1 < ulid2);
     /// ```
-    pub fn generate_from_datetime<T: TimeZone>(&mut self, datetime: DateTime<T>) -> Result<Ulid, MonotonicError> {
-        if let Some(prev) = self.previous {
-            let last_ms = prev.timestamp_ms() as i64;
-            // maybe time went backward, or it is the same ms.
-            // increment instead of generating a new random so that it is monotonic
-            if datetime.timestamp_millis() <= last_ms {
-                if let Some(next) = prev.increment() {
-                    self.previous = Some(next);
-                    return Ok(next)
-                } else {
-                    return Err(MonotonicError::Overflow)
-                }
+    pub fn generate_from_datetime<T: TimeZone>(
+        &mut self,
+        datetime: DateTime<T>,
+    ) -> Result<Ulid, MonotonicError> {
+        let last_ms = self.previous.timestamp_ms() as i64;
+        // maybe time went backward, or it is the same ms.
+        // increment instead of generating a new random so that it is monotonic
+        if datetime.timestamp_millis() <= last_ms {
+            if let Some(next) = self.previous.increment() {
+                self.previous = next;
+                return Ok(next);
+            } else {
+                return Err(MonotonicError::Overflow);
             }
         }
-        let next = Ulid::from_datetime(datetime);
-        self.previous = Some(next);
+        let next = Ulid::from_datetime_with_source(datetime, &mut self.source);
+        self.previous = next;
         Ok(next)
+    }
+}
+
+impl Default for Generator {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::Generator;
     use super::Ulid;
     use chrono::prelude::*;
     use chrono::Duration;
-    use super::Generator;
 
     #[test]
     fn test_dynamic() {
@@ -294,8 +326,8 @@ mod tests {
 
     #[test]
     fn test_source() {
-        use rand::rngs::OsRng;
-        let mut source = OsRng::new().expect("could not create OS Rng");
+        use rand::rngs::mock::StepRng;
+        let mut source = StepRng::new(123, 0);
 
         let u1 = Ulid::with_source(&mut source);
         let dt = Utc::now() + Duration::milliseconds(1);
@@ -303,7 +335,7 @@ mod tests {
         let u3 = Ulid::from_datetime_with_source(dt, &mut source);
 
         assert!(u1 < u2);
-        assert!(u2 != u3);
+        assert!(u2 == u3);
     }
 
     #[test]
