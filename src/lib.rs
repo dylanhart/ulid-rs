@@ -37,6 +37,10 @@ use std::str::FromStr;
 
 pub use crate::base32::EncodingError;
 
+macro_rules! bitmask {
+    ($len:expr) => { ((1 << $len) - 1) }
+}
+
 /// A Ulid is a unique 128-bit lexicographically sortable identifier
 ///
 /// Canonically, it is represented as a 26 character Crockford Base32 encoded
@@ -49,6 +53,9 @@ pub use crate::base32::EncodingError;
 pub struct Ulid(pub u128);
 
 impl Ulid {
+    const TIME_BITS: u8 = 48;
+    const RAND_BITS: u8 = 80;
+
     /// Creates a new Ulid with the current time
     pub fn new() -> Ulid {
         Ulid::from_datetime(Utc::now())
@@ -73,7 +80,7 @@ impl Ulid {
         R: rand::Rng,
     {
         let timestamp = datetime.timestamp_millis();
-        let timebits = (timestamp & ((1 << 48) - 1)) as u64;
+        let timebits = (timestamp & bitmask!(Self::TIME_BITS)) as u64;
 
         let msb = timebits << 16 | u64::from(source.gen::<u16>());
         let lsb = source.gen::<u64>();
@@ -119,7 +126,7 @@ impl Ulid {
 
     /// Gets the timestamp section of this ulid
     pub fn timestamp_ms(&self) -> u64 {
-        (self.0 >> 80) as u64
+        (self.0 >> Self::RAND_BITS) as u64
     }
 
     /// Creates a Crockford Base32 encoded string that represents this Ulid
@@ -144,7 +151,7 @@ impl Ulid {
 
     /// increment the random number, make sure that the ts millis stays the same
     fn increment(&self) -> Option<Ulid> {
-        const MAX_RANDOM: u128 = (1 << 80) - 1;
+        const MAX_RANDOM: u128 = bitmask!(Ulid::RAND_BITS);
 
         if (self.0 & MAX_RANDOM) == MAX_RANDOM {
             None
@@ -176,7 +183,7 @@ impl Into<(u64, u64)> for Ulid {
     fn into(self) -> (u64, u64) {
         (
             (self.0 >> 64) as u64,
-            (self.0 & 0xffff_ffff_ffff_ffff) as u64,
+            (self.0 & bitmask!(64)) as u64,
         )
     }
 }
@@ -360,6 +367,10 @@ mod tests {
 
     #[test]
     fn test_increment() {
+        let ulid = Ulid::from_string("01BX5ZZKBKAZZZZZZZZZZZZZZZ").unwrap();
+        let ulid = ulid.increment().unwrap();
+        assert_eq!("01BX5ZZKBKB000000000000000", ulid.to_string());
+
         let ulid = Ulid::from_string("01BX5ZZKBKZZZZZZZZZZZZZZZX").unwrap();
         let ulid = ulid.increment().unwrap();
         assert_eq!("01BX5ZZKBKZZZZZZZZZZZZZZZY", ulid.to_string());
