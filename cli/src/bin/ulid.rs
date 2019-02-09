@@ -1,8 +1,9 @@
 extern crate structopt;
 
 use std::io::{self, Write};
-use ulid::{Ulid, Generator};
+use ulid::{Generator, Ulid};
 
+use std::{thread, time::Duration};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -29,11 +30,28 @@ fn main() {
 
 fn generate(count: u32, monotonic: bool) {
     let stdout = io::stdout();
+    let stderr = io::stderr();
     let mut locked = stdout.lock();
+    let mut err_locked = stderr.lock();
     if monotonic {
         let mut gen = Generator::new();
-        for _ in 0..count {
-            writeln!(&mut locked, "{}", gen.generate().unwrap()).unwrap();
+        let mut i = 0;
+        while i < count {
+            match gen.generate() {
+                Ok(ulid) => {
+                    writeln!(&mut locked, "{}", ulid).unwrap();
+                    i += 1;
+                }
+                Err(_) => {
+                    writeln!(
+                        &mut err_locked,
+                        "Failed to create new ulid due to overflow, sleeping 1 ms"
+                    )
+                    .unwrap();
+                    thread::sleep(Duration::from_millis(1));
+                    // do not increment i
+                }
+            }
         }
     } else {
         for _ in 0..count {
