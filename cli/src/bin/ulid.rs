@@ -43,7 +43,11 @@ fn generate(count: u32, monotonic: bool) {
                     i += 1;
                 }
                 Err(_) => {
-                    writeln!(&mut err_locked, "unable to create ulid").unwrap();
+                    writeln!(
+                        &mut err_locked,
+                        "Failed to create new ulid due to overflow, sleeping 1 ms"
+                    )
+                    .unwrap();
                     thread::sleep(Duration::from_millis(1));
                     // do not increment i
                 }
