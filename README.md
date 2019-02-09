@@ -29,8 +29,9 @@ assert_eq!(ulid, res.unwrap());
 Benchmarks were run on my laptop. Run them yourself with `cargo bench`.
 
 ```
-test bench_from_string ... bench:          40 ns/iter (+/- 4)
-test bench_from_time   ... bench:          24 ns/iter (+/- 2)
-test bench_new         ... bench:          75 ns/iter (+/- 9)
-test bench_to_string   ... bench:          53 ns/iter (+/- 4)
+test bench_from_string        ... bench:          41 ns/iter (+/- 16)
+test bench_from_time          ... bench:          24 ns/iter (+/- 6)
+test bench_generator_generate ... bench:          61 ns/iter (+/- 12)
+test bench_new                ... bench:          73 ns/iter (+/- 17)
+test bench_to_string          ... bench:          89 ns/iter (+/- 11)
 ```
