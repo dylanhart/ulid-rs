@@ -56,12 +56,29 @@ impl Ulid {
     const TIME_BITS: u8 = 48;
     const RAND_BITS: u8 = 80;
 
-    /// Creates a new Ulid with the current time
+    /// Creates a new Ulid with the current time (UTC)
+    ///
+    /// # Example
+    /// ```rust
+    /// use ulid::Ulid;
+    ///
+    /// let my_ulid = Ulid::new();
+    /// ```
     pub fn new() -> Ulid {
         Ulid::from_datetime(Utc::now())
     }
 
     /// Creates a new Ulid using data from the given random number generator
+    ///
+    /// # Example
+    /// ```rust
+    /// use rand::FromEntropy;
+    /// use rand::rngs::SmallRng;
+    /// use ulid::Ulid;
+    ///
+    /// let mut rng = SmallRng::from_entropy();
+    /// let ulid = Ulid::with_source(&mut rng);
+    /// ```
     pub fn with_source<R: rand::Rng>(source: &mut R) -> Ulid {
         Ulid::from_datetime_with_source(Utc::now(), source)
     }
@@ -69,11 +86,30 @@ impl Ulid {
     /// Creates a new Ulid with the given datetime
     ///
     /// This can be useful when migrating data to use Ulid identifiers
+    ///
+    /// # Example
+    /// ```rust
+    /// use chrono::offset::Utc;
+    /// use ulid::Ulid;
+    ///
+    /// let ulid = Ulid::from_datetime(Utc::now());
+    /// ```
     pub fn from_datetime<T: TimeZone>(datetime: DateTime<T>) -> Ulid {
         Ulid::from_datetime_with_source(datetime, &mut rand::thread_rng())
     }
 
     /// Creates a new Ulid with the given datetime and random number generator
+    ///
+    /// # Example
+    /// ```rust
+    /// use chrono::offset::Utc;
+    /// use rand::FromEntropy;
+    /// use rand::rngs::SmallRng;
+    /// use ulid::Ulid;
+    ///
+    /// let mut rng = SmallRng::from_entropy();
+    /// let ulid = Ulid::from_datetime_with_source(Utc::now(), &mut rng);
+    /// ```
     pub fn from_datetime_with_source<T, R>(datetime: DateTime<T>, source: &mut R) -> Ulid
     where
         T: TimeZone,
@@ -91,6 +127,17 @@ impl Ulid {
     ///
     /// An EncodingError will be returned when the given string is not formated
     /// properly.
+    ///
+    /// # Example
+    /// ```rust
+    /// use ulid::Ulid;
+    ///
+    /// let text = "01D39ZY06FGSCTVN4T2V9PKHFZ";
+    /// let result = Ulid::from_string(text);
+    ///
+    /// assert!(result.is_ok());
+    /// assert_eq!(&result.unwrap().to_string(), text);
+    /// ```
     pub fn from_string(encoded: &str) -> Result<Ulid, EncodingError> {
         base32::decode(encoded).map(Ulid)
     }
@@ -100,8 +147,7 @@ impl Ulid {
     /// The nil Ulid is special form of Ulid that is specified to have
     /// all 128 bits set to zero.
     ///
-    /// # Examples
-    ///
+    /// # Example
     /// ```rust
     /// use ulid::Ulid;
     ///
@@ -117,6 +163,18 @@ impl Ulid {
     }
 
     /// Gets the datetime of when this Ulid was created accurate to 1ms
+    ///
+    /// # Example
+    /// ```rust
+    /// use chrono::Duration;
+    /// use chrono::offset::Utc;
+    /// use ulid::Ulid;
+    ///
+    /// let dt = Utc::now();
+    /// let ulid = Ulid::from_datetime(dt);
+    ///
+    /// assert!((dt - ulid.datetime()) < Duration::milliseconds(1));
+    /// ```
     pub fn datetime(&self) -> DateTime<Utc> {
         let stamp = self.timestamp_ms();
         let secs = stamp / 1000;
@@ -125,31 +183,53 @@ impl Ulid {
     }
 
     /// Gets the timestamp section of this ulid
+    ///
+    /// # Example
+    /// ```rust
+    /// use chrono::offset::Utc;
+    /// use ulid::Ulid;
+    ///
+    /// let dt = Utc::now();
+    /// let ulid = Ulid::from_datetime(dt);
+    ///
+    /// assert_eq!(ulid.timestamp_ms(), dt.timestamp_millis() as u64);
+    /// ```
     pub fn timestamp_ms(&self) -> u64 {
         (self.0 >> Self::RAND_BITS) as u64
     }
 
     /// Creates a Crockford Base32 encoded string that represents this Ulid
+    ///
+    /// # Example
+    /// ```rust
+    /// use ulid::Ulid;
+    ///
+    /// let text = "01D39ZY06FGSCTVN4T2V9PKHFZ";
+    /// let ulid = Ulid::from_string(text).unwrap();
+    ///
+    /// assert_eq!(&ulid.to_string(), text);
+    /// ```
     pub fn to_string(&self) -> String {
         base32::encode(self.0)
     }
 
     /// Test if the Ulid is nil
     ///
-    /// # Examples
-    ///
+    /// # Example
     /// ```rust
     /// use ulid::Ulid;
     ///
-    /// let nil = Ulid::nil();
+    /// let ulid = Ulid::new();
+    /// assert!(!ulid.is_nil());
     ///
+    /// let nil = Ulid::nil();
     /// assert!(nil.is_nil());
     /// ```
     pub fn is_nil(&self) -> bool {
         self.0 == 0u128
     }
 
-    /// increment the random number, make sure that the ts millis stays the same
+    /// Increment the random number, make sure that the ts millis stays the same
     fn increment(&self) -> Option<Ulid> {
         const MAX_RANDOM: u128 = bitmask!(Ulid::RAND_BITS);
 
@@ -214,11 +294,21 @@ impl fmt::Display for Ulid {
     }
 }
 
-/// error while trying to generate a monotonic increment in the same millisecond
-#[derive(Debug, PartialEq)]
+/// Error while trying to generate a monotonic increment in the same millisecond
+#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
 pub enum MonotonicError {
-    /// would overflow into the next millisecond
+    /// Would overflow into the next millisecond
     Overflow,
+}
+
+impl fmt::Display for MonotonicError
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        let text = match *self {
+            MonotonicError::Overflow => "Ulid random bits would overflow",
+        };
+        write!(f, "{}", text)
+    }
 }
 
 /// A Ulid generator that provides monotonically increasing Ulids
@@ -229,14 +319,27 @@ pub struct Generator {
 
 impl Generator {
     /// Create a new ulid generator for monotonically ordered ulids
+    ///
+    /// # Example
+    /// ```rust
+    /// use ulid::Generator;
+    ///
+    /// let mut gen = Generator::new();
+    ///
+    /// let ulid1 = gen.generate().unwrap();
+    /// let ulid2 = gen.generate().unwrap();
+    ///
+    /// assert!(ulid1 < ulid2);
+    /// ```
     pub fn new() -> Generator {
         Self::with_source(rand::thread_rng())
     }
 
     /// Create a new ulid generator for monotonically ordered ulids using the given rng
     ///
+    /// # Example
     /// ```rust
-    /// # use ulid::Generator;
+    /// use ulid::Generator;
     /// use rand::rngs::SmallRng;
     /// use rand::FromEntropy;
     ///
@@ -256,6 +359,16 @@ impl Generator {
 
     /// Generate a new Ulid. Each call is guaranteed to provide a Ulid with a larger value than the
     /// last call. If the random bits would overflow, this method will return an error.
+    ///
+    /// ```rust
+    /// use ulid::Generator;
+    /// let mut gen = Generator::new();
+    ///
+    /// let ulid1 = gen.generate().unwrap();
+    /// let ulid2 = gen.generate().unwrap();
+    ///
+    /// assert!(ulid1 < ulid2);
+    /// ```
     pub fn generate(&mut self) -> Result<Ulid, MonotonicError> {
         let now = Utc::now();
         self.generate_from_datetime(now)
@@ -267,14 +380,16 @@ impl Generator {
     ///
     /// # Example
     /// ```rust
-    /// # use ulid::Generator;
+    /// use ulid::Generator;
     /// use chrono::Utc;
     ///
     /// let dt = Utc::now();
     /// let mut gen = Generator::new();
+    ///
     /// let ulid1 = gen.generate_from_datetime(dt).unwrap();
     /// let ulid2 = gen.generate_from_datetime(dt).unwrap();
     ///
+    /// assert_eq!(ulid1.datetime(), ulid2.datetime());
     /// assert!(ulid1 < ulid2);
     /// ```
     pub fn generate_from_datetime<T: TimeZone>(
