@@ -49,7 +49,7 @@ macro_rules! bitmask {
 /// Of the 128-bits, the first 48 are a unix timestamp in milliseconds. The
 /// remaining 80 are random. The first 48 provide for lexicographic sorting and
 /// the remaining 80 ensure that the identifier is unique.
-#[derive(Debug, PartialOrd, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct Ulid(pub u128);
 
 impl Ulid {
