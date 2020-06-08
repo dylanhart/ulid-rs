@@ -67,3 +67,47 @@ pub mod ulid_as_u128 {
         Ok(Ulid(deserialized_u128))
     }
 }
+
+/// Serialization and deserialization of ULIDs through UUID strings.
+///
+/// To use this module, annotate a field with
+/// `#[serde(with = "ulid_as_uuid")]`,
+/// `#[serde(serialize_with = "ulid_as_uuid")]`, or
+/// `#[serde(deserialize_with = "ulid_as_uuid")]`.
+///
+/// # Examples
+/// ```
+/// # use ulid::Ulid;
+/// # use ulid::serde::ulid_as_uuid;
+/// # use serde::{Serialize, Deserialize};
+/// #[derive(Serialize, Deserialize)]
+/// struct UuidExample {
+///     #[serde(with = "ulid_as_uuid")]
+///     identifier: Ulid
+/// }
+/// ```
+#[cfg(all(feature = "uuid", feature = "serde"))]
+pub mod ulid_as_uuid {
+    use crate::Ulid;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+    use uuid::Uuid;
+
+    /// Converts the ULID to a UUID and serializes it as a string.
+    pub fn serialize<S>(value: &Ulid, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let uuid: Uuid = (*value).into();
+        uuid.to_string().serialize(serializer)
+    }
+
+    /// Deserializes a ULID from a string containing a UUID.
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Ulid, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let de_string = String::deserialize(deserializer)?;
+        let de_uuid = Uuid::parse_str(&de_string).map_err(serde::de::Error::custom)?;
+        Ok(Ulid::from(de_uuid))
+    }
+}
