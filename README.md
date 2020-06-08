@@ -24,6 +24,11 @@ assert_eq!(ulid, res.unwrap());
 
 [ulid]: https://github.com/alizain/ulid
 
+## Optional features
+
+* **`serde`**: Enables serialization and deserialization of `Ulid` types via `serde`. ULIDs are serialized using their canonical 26-character representation as defined in the ULID standard. An optional `ulid_as_u128` module is provided, which enables serialization through an `Ulid`'s inner `u128` primitive type. See the [documentation](https://docs.rs/ulid/latest/ulid/serde/index.html) and [serde docs](https://serde.rs/field-attrs.html#with) for more information.
+* **`uuid`**: Implements infallible conversions between ULIDs and UUIDs from the [`uuid`](https://github.com/uuid-rs/uuid) crate via the [`std::convert::From`](https://doc.rust-lang.org/std/convert/trait.From.html) trait.
+
 ## Benchmark
 
 Benchmarks were run on my laptop. Run them yourself with `cargo bench`.
