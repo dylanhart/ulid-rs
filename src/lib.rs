@@ -30,6 +30,8 @@
 use rand;
 
 mod base32;
+#[cfg(feature = "serde")]
+pub mod serde;
 
 use chrono::prelude::{DateTime, TimeZone, Utc};
 use std::fmt;

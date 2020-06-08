@@ -16,6 +16,7 @@ repository = "https://github.com/dylanhart/ulid-rs"
 chrono = "0.4"
 lazy_static = "1.2"
 rand = "0.6"
+serde = { version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
 bencher = "0.1"
