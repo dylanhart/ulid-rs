@@ -29,3 +29,6 @@ harness = false
 
 [workspace]
 members = ["cli"]
+
+[package.metadata.docs.rs]
+all-features = true
