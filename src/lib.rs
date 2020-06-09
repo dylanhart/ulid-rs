@@ -30,6 +30,10 @@
 use rand;
 
 mod base32;
+#[cfg(feature = "serde")]
+pub mod serde;
+#[cfg(feature = "uuid")]
+mod uuid;
 
 use chrono::prelude::{DateTime, TimeZone, Utc};
 use std::fmt;
