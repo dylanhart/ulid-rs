@@ -1,6 +1,6 @@
 [package]
 name = "ulid"
-version = "0.3.3"
+version = "0.4.0"
 authors = ["dylanhart <dylan96hart@gmail.com>"]
 edition = "2018"
 
