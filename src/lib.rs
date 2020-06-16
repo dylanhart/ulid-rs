@@ -488,9 +488,7 @@ impl Default for Generator {
 
 #[cfg(test)]
 mod tests {
-    use super::Generator;
-    use super::Ulid;
-    use chrono::prelude::*;
+    use super::*;
     use chrono::Duration;
 
     #[test]
@@ -553,6 +551,8 @@ mod tests {
         let mut source = StepRng::new(123, 0);
         let mut gen = Generator::new();
 
+        let _has_default = Generator::default();
+
         let ulid1 = gen.generate_with_source(&mut source).unwrap();
         let ulid2 = gen.generate_with_source(&mut source).unwrap();
         assert!(ulid1 < ulid2);
@@ -595,5 +595,31 @@ mod tests {
         let ts = dt.timestamp() as u64 * 1000 + dt.timestamp_subsec_millis() as u64;
 
         assert_eq!(ulid.timestamp_ms(), ts);
+    }
+
+    #[test]
+    fn can_into_thing() {
+        let ulid = Ulid::new();
+        let s: String = ulid.into();
+        let u: u128 = ulid.into();
+        let uu: (u64, u64) = ulid.into();
+
+        assert_eq!(Ulid::from_str(&s).unwrap(), ulid);
+        assert_eq!(Ulid::from(u), ulid);
+        assert_eq!(Ulid::from(uu), ulid);
+    }
+
+    #[test]
+    fn default_is_nil() {
+        assert_eq!(Ulid::default(), Ulid::nil());
+    }
+
+    #[test]
+    fn can_display_things() {
+        println!("{}", Ulid::new());
+        println!("{}", EncodeError::BufferTooSmall);
+        println!("{}", DecodeError::InvalidLength);
+        println!("{}", DecodeError::InvalidChar);
+        println!("{}", MonotonicError::Overflow);
     }
 }
