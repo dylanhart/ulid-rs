@@ -39,7 +39,7 @@ use chrono::prelude::{DateTime, TimeZone, Utc};
 use std::fmt;
 use std::str::FromStr;
 
-pub use crate::base32::EncodingError;
+pub use crate::base32::{DecodeError, EncodeError, ULID_LEN};
 
 macro_rules! bitmask {
     ($len:expr) => { ((1 << $len) - 1) }
@@ -129,7 +129,7 @@ impl Ulid {
 
     /// Creates a Ulid from a Crockford Base32 encoded string
     ///
-    /// An EncodingError will be returned when the given string is not formated
+    /// An DecodeError will be returned when the given string is not formated
     /// properly.
     ///
     /// # Example
@@ -142,7 +142,7 @@ impl Ulid {
     /// assert!(result.is_ok());
     /// assert_eq!(&result.unwrap().to_string(), text);
     /// ```
-    pub fn from_string(encoded: &str) -> Result<Ulid, EncodingError> {
+    pub fn from_string(encoded: &str) -> Result<Ulid, DecodeError> {
         base32::decode(encoded).map(Ulid)
     }
 
@@ -200,6 +200,25 @@ impl Ulid {
     /// ```
     pub fn timestamp_ms(&self) -> u64 {
         (self.0 >> Self::RAND_BITS) as u64
+    }
+
+    /// Creates a Crockford Base32 encoded string that represents this Ulid
+    ///
+    /// # Example
+    /// ```rust
+    /// use ulid::Ulid;
+    ///
+    /// let text = "01D39ZY06FGSCTVN4T2V9PKHFZ";
+    /// let ulid = Ulid::from_string(text).unwrap();
+    ///
+    /// let mut buf = [0; ulid::ULID_LEN];
+    /// let new_text = ulid.to_str(&mut buf).unwrap();
+    ///
+    /// assert_eq!(new_text, text);
+    /// ```
+    pub fn to_str<'buf>(&self, buf: &'buf mut [u8]) -> Result<&'buf mut str, EncodeError> {
+        let len = base32::encode_to(self.0, buf)?;
+        Ok(unsafe { std::str::from_utf8_unchecked_mut(&mut buf[..len]) })
     }
 
     /// Creates a Crockford Base32 encoded string that represents this Ulid
@@ -285,7 +304,7 @@ impl Into<u128> for Ulid {
 }
 
 impl FromStr for Ulid {
-    type Err = EncodingError;
+    type Err = DecodeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ulid::from_string(s)
@@ -294,7 +313,8 @@ impl FromStr for Ulid {
 
 impl fmt::Display for Ulid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.to_string())
+        let mut buffer = [0; ULID_LEN];
+        write!(f, "{}", self.to_str(&mut buffer).unwrap())
     }
 }
 

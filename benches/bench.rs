@@ -1,6 +1,6 @@
 use bencher::{benchmark_group, benchmark_main, Bencher};
 use chrono::Utc;
-use ulid::{Ulid, Generator};
+use ulid::{Ulid, Generator, ULID_LEN};
 
 fn bench_new(b: &mut Bencher) {
     b.iter(|| Ulid::new());
@@ -14,6 +14,14 @@ fn bench_generator_generate(b: &mut Bencher) {
 fn bench_from_time(b: &mut Bencher) {
     let time = Utc::now();
     b.iter(|| Ulid::from_datetime(time));
+}
+
+fn bench_to_str(b: &mut Bencher) {
+    let ulid = Ulid::new();
+    b.iter(|| {
+        let mut buffer = [0; ULID_LEN];
+        ulid.to_str(&mut buffer).unwrap();
+    });
 }
 
 fn bench_to_string(b: &mut Bencher) {
@@ -31,6 +39,7 @@ benchmark_group!(
     bench_new,
     bench_generator_generate,
     bench_from_time,
+    bench_to_str,
     bench_to_string,
     bench_from_string
 );
