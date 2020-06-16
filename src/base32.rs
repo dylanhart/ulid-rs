@@ -1,6 +1,9 @@
 use std::fmt;
 use lazy_static::lazy_static;
 
+/// Length of a string-encoded Ulid
+pub const ULID_LEN: usize = 26;
+
 const ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 lazy_static! {
@@ -17,50 +20,77 @@ lazy_static! {
     };
 }
 
-/// An encoding error that can occur when decoding a base32 string
+/// An error that can occur when encoding a base32 string
 #[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
-pub enum EncodingError {
+pub enum EncodeError {
+    /// The length of the provided buffer is not large enough
+    BufferTooSmall,
+}
+
+impl fmt::Display for EncodeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        let text = match *self {
+            EncodeError::BufferTooSmall => "buffer too small",
+        };
+        write!(f, "{}", text)
+    }
+}
+
+/// Encode a u128 value to a given buffer. The provided buffer should be at least `ULID_LEN` long.
+pub fn encode_to(mut value: u128, buffer: &mut [u8]) -> Result<usize, EncodeError> {
+    if buffer.len() < ULID_LEN {
+        return Err(EncodeError::BufferTooSmall);
+    }
+
+    for i in 0..ULID_LEN {
+        buffer[ULID_LEN - 1 - i] = ALPHABET[(value & 0x1f) as usize];
+        value >>= 5;
+    }
+
+    Ok(ULID_LEN)
+}
+
+pub fn encode(value: u128) -> String {
+    let mut buffer: [u8; ULID_LEN] = [0; ULID_LEN];
+
+    encode_to(value, &mut buffer).expect("unexpected encoding error");
+
+    String::from_utf8(buffer.to_vec()).expect("unexpected failure in base32 encode for ulid")
+}
+
+/// An error that can occur when decoding a base32 string
+#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
+pub enum DecodeError {
     /// The length of the string does not match the expected length
     InvalidLength,
     /// A non-base32 character was found
     InvalidChar,
 }
 
-impl fmt::Display for EncodingError {
+impl fmt::Display for DecodeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         let text = match *self {
-            EncodingError::InvalidLength => "invalid length",
-            EncodingError::InvalidChar => "invalid character",
+            DecodeError::InvalidLength => "invalid length",
+            DecodeError::InvalidChar => "invalid character",
         };
         write!(f, "{}", text)
     }
 }
 
-pub fn encode(mut value: u128) -> String {
-    let mut buffer: [u8; 26] = [ALPHABET[0]; 26];
-
-    for i in 0..26 {
-        buffer[25 - i] = ALPHABET[(value & 0x1f) as usize];
-        value >>= 5;
-    }
-
-    String::from_utf8(buffer.to_vec()).expect("unexpected failure in base32 encode for ulid")
-}
-
-pub fn decode(encoded: &str) -> Result<u128, EncodingError> {
-    if encoded.len() != 26 {
-        return Err(EncodingError::InvalidLength);
+pub fn decode(encoded: &str) -> Result<u128, DecodeError> {
+    if encoded.len() != ULID_LEN {
+        return Err(DecodeError::InvalidLength);
     }
 
     let mut value: u128 = 0;
 
     let bytes = encoded.as_bytes();
 
-    for i in 0..26 {
+    for i in 0..ULID_LEN {
         if let Some(val) = LOOKUP[bytes[i] as usize] {
             value = (value << 5) | u128::from(val);
         } else {
-            return Err(EncodingError::InvalidChar);
+            return Err(DecodeError::InvalidChar);
         }
     }
 
@@ -87,18 +117,18 @@ mod tests {
 
     #[test]
     fn test_length() {
-        assert_eq!(encode(0xffffffffffffffffffffffffffffffff).len(), 26);
-        assert_eq!(encode(0x0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f).len(), 26);
-        assert_eq!(encode(0x00000000000000000000000000000000).len(), 26);
+        assert_eq!(encode(0xffffffffffffffffffffffffffffffff).len(), ULID_LEN);
+        assert_eq!(encode(0x0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f).len(), ULID_LEN);
+        assert_eq!(encode(0x00000000000000000000000000000000).len(), ULID_LEN);
 
-        assert_eq!(decode(""), Err(EncodingError::InvalidLength));
+        assert_eq!(decode(""), Err(DecodeError::InvalidLength));
         assert_eq!(
             decode("2D9RW50MA499CMAGHM6DD42DT"),
-            Err(EncodingError::InvalidLength)
+            Err(DecodeError::InvalidLength)
         );
         assert_eq!(
             decode("2D9RW50MA499CMAGHM6DD42DTPP"),
-            Err(EncodingError::InvalidLength)
+            Err(DecodeError::InvalidLength)
         );
     }
 
@@ -116,15 +146,15 @@ mod tests {
 
         assert_eq!(
             decode("2D9RW50[A499CMAGHM6DD42DTP"),
-            Err(EncodingError::InvalidChar)
+            Err(DecodeError::InvalidChar)
         );
         assert_eq!(
             decode("2D9RW50LA499CMAGHM6DD42DTP"),
-            Err(EncodingError::InvalidChar)
+            Err(DecodeError::InvalidChar)
         );
         assert_eq!(
             decode("2D9RW50IA499CMAGHM6DD42DTP"),
-            Err(EncodingError::InvalidChar)
+            Err(DecodeError::InvalidChar)
         );
     }
 }

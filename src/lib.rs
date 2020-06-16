@@ -39,7 +39,7 @@ use chrono::prelude::{DateTime, TimeZone, Utc};
 use std::fmt;
 use std::str::FromStr;
 
-pub use crate::base32::EncodingError;
+pub use crate::base32::{DecodeError, EncodeError, ULID_LEN};
 
 macro_rules! bitmask {
     ($len:expr) => { ((1 << $len) - 1) }
@@ -129,7 +129,7 @@ impl Ulid {
 
     /// Creates a Ulid from a Crockford Base32 encoded string
     ///
-    /// An EncodingError will be returned when the given string is not formated
+    /// An DecodeError will be returned when the given string is not formated
     /// properly.
     ///
     /// # Example
@@ -142,7 +142,7 @@ impl Ulid {
     /// assert!(result.is_ok());
     /// assert_eq!(&result.unwrap().to_string(), text);
     /// ```
-    pub fn from_string(encoded: &str) -> Result<Ulid, EncodingError> {
+    pub fn from_string(encoded: &str) -> Result<Ulid, DecodeError> {
         base32::decode(encoded).map(Ulid)
     }
 
@@ -211,6 +211,25 @@ impl Ulid {
     /// let text = "01D39ZY06FGSCTVN4T2V9PKHFZ";
     /// let ulid = Ulid::from_string(text).unwrap();
     ///
+    /// let mut buf = [0; ulid::ULID_LEN];
+    /// let new_text = ulid.to_str(&mut buf).unwrap();
+    ///
+    /// assert_eq!(new_text, text);
+    /// ```
+    pub fn to_str<'buf>(&self, buf: &'buf mut [u8]) -> Result<&'buf mut str, EncodeError> {
+        let len = base32::encode_to(self.0, buf)?;
+        Ok(unsafe { std::str::from_utf8_unchecked_mut(&mut buf[..len]) })
+    }
+
+    /// Creates a Crockford Base32 encoded string that represents this Ulid
+    ///
+    /// # Example
+    /// ```rust
+    /// use ulid::Ulid;
+    ///
+    /// let text = "01D39ZY06FGSCTVN4T2V9PKHFZ";
+    /// let ulid = Ulid::from_string(text).unwrap();
+    ///
     /// assert_eq!(&ulid.to_string(), text);
     /// ```
     pub fn to_string(&self) -> String {
@@ -251,9 +270,9 @@ impl Default for Ulid {
     }
 }
 
-impl<'a> Into<String> for &'a Ulid {
-    fn into(self) -> String {
-        self.to_string()
+impl From<Ulid> for String {
+    fn from(ulid: Ulid) -> String {
+        ulid.to_string()
     }
 }
 
@@ -263,11 +282,11 @@ impl From<(u64, u64)> for Ulid {
     }
 }
 
-impl Into<(u64, u64)> for Ulid {
-    fn into(self) -> (u64, u64) {
+impl From<Ulid> for (u64, u64) {
+    fn from(ulid: Ulid) -> (u64, u64) {
         (
-            (self.0 >> 64) as u64,
-            (self.0 & bitmask!(64)) as u64,
+            (ulid.0 >> 64) as u64,
+            (ulid.0 & bitmask!(64)) as u64,
         )
     }
 }
@@ -278,14 +297,14 @@ impl From<u128> for Ulid {
     }
 }
 
-impl Into<u128> for Ulid {
-    fn into(self) -> u128 {
-        self.0
+impl From<Ulid> for u128 {
+    fn from(ulid: Ulid) -> u128 {
+        ulid.0
     }
 }
 
 impl FromStr for Ulid {
-    type Err = EncodingError;
+    type Err = DecodeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ulid::from_string(s)
@@ -294,7 +313,8 @@ impl FromStr for Ulid {
 
 impl fmt::Display for Ulid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.to_string())
+        let mut buffer = [0; ULID_LEN];
+        write!(f, "{}", self.to_str(&mut buffer).unwrap())
     }
 }
 
@@ -468,9 +488,7 @@ impl Default for Generator {
 
 #[cfg(test)]
 mod tests {
-    use super::Generator;
-    use super::Ulid;
-    use chrono::prelude::*;
+    use super::*;
     use chrono::Duration;
 
     #[test]
@@ -533,6 +551,8 @@ mod tests {
         let mut source = StepRng::new(123, 0);
         let mut gen = Generator::new();
 
+        let _has_default = Generator::default();
+
         let ulid1 = gen.generate_with_source(&mut source).unwrap();
         let ulid2 = gen.generate_with_source(&mut source).unwrap();
         assert!(ulid1 < ulid2);
@@ -575,5 +595,31 @@ mod tests {
         let ts = dt.timestamp() as u64 * 1000 + dt.timestamp_subsec_millis() as u64;
 
         assert_eq!(ulid.timestamp_ms(), ts);
+    }
+
+    #[test]
+    fn can_into_thing() {
+        let ulid = Ulid::new();
+        let s: String = ulid.into();
+        let u: u128 = ulid.into();
+        let uu: (u64, u64) = ulid.into();
+
+        assert_eq!(Ulid::from_str(&s).unwrap(), ulid);
+        assert_eq!(Ulid::from(u), ulid);
+        assert_eq!(Ulid::from(uu), ulid);
+    }
+
+    #[test]
+    fn default_is_nil() {
+        assert_eq!(Ulid::default(), Ulid::nil());
+    }
+
+    #[test]
+    fn can_display_things() {
+        println!("{}", Ulid::new());
+        println!("{}", EncodeError::BufferTooSmall);
+        println!("{}", DecodeError::InvalidLength);
+        println!("{}", DecodeError::InvalidChar);
+        println!("{}", MonotonicError::Overflow);
     }
 }
