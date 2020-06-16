@@ -8,8 +8,9 @@ impl From<Uuid> for Ulid {
         Ulid(uuid.as_u128())
     }
 }
-impl From<Ulid> for Uuid {
-    fn from(ulid: Ulid) -> Self {
+
+impl From<&Ulid> for Uuid {
+    fn from(ulid: &Ulid) -> Self {
         Uuid::from_u128(ulid.0)
     }
 }

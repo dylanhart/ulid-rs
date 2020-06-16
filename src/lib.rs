@@ -270,9 +270,9 @@ impl Default for Ulid {
     }
 }
 
-impl<'a> Into<String> for &'a Ulid {
-    fn into(self) -> String {
-        self.to_string()
+impl From<Ulid> for String {
+    fn from(ulid: Ulid) -> String {
+        ulid.to_string()
     }
 }
 
@@ -282,11 +282,11 @@ impl From<(u64, u64)> for Ulid {
     }
 }
 
-impl Into<(u64, u64)> for Ulid {
-    fn into(self) -> (u64, u64) {
+impl From<Ulid> for (u64, u64) {
+    fn from(ulid: Ulid) -> (u64, u64) {
         (
-            (self.0 >> 64) as u64,
-            (self.0 & bitmask!(64)) as u64,
+            (ulid.0 >> 64) as u64,
+            (ulid.0 & bitmask!(64)) as u64,
         )
     }
 }
@@ -297,9 +297,9 @@ impl From<u128> for Ulid {
     }
 }
 
-impl Into<u128> for Ulid {
-    fn into(self) -> u128 {
-        self.0
+impl From<Ulid> for u128 {
+    fn from(ulid: Ulid) -> u128 {
+        ulid.0
     }
 }
 

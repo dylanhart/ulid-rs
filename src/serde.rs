@@ -6,7 +6,7 @@
 //! ULIDs can optionally be serialized as u128 integers using the `ulid_as_u128`
 //! module. See the module's documentation for examples.
 
-use crate::Ulid;
+use crate::{Ulid, ULID_LEN};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 impl Serialize for Ulid {
@@ -14,7 +14,9 @@ impl Serialize for Ulid {
     where
         S: Serializer,
     {
-        self.to_string().serialize(serializer)
+        let mut buffer = [0; ULID_LEN];
+        let text = self.to_str(&mut buffer).unwrap();
+        text.serialize(serializer)
     }
 }
 
