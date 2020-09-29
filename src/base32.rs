@@ -1,5 +1,5 @@
-use std::fmt;
 use lazy_static::lazy_static;
+use std::fmt;
 
 /// Length of a string-encoded Ulid
 pub const ULID_LEN: usize = 26;
@@ -26,6 +26,8 @@ pub enum EncodeError {
     /// The length of the provided buffer is not large enough
     BufferTooSmall,
 }
+
+impl std::error::Error for EncodeError {}
 
 impl fmt::Display for EncodeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
@@ -66,6 +68,8 @@ pub enum DecodeError {
     /// A non-base32 character was found
     InvalidChar,
 }
+
+impl std::error::Error for DecodeError {}
 
 impl fmt::Display for DecodeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
