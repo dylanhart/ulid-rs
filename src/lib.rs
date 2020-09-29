@@ -27,8 +27,6 @@
 //!
 //! ```
 
-use rand;
-
 mod base32;
 #[cfg(feature = "serde")]
 pub mod serde;
@@ -42,7 +40,9 @@ use std::str::FromStr;
 pub use crate::base32::{DecodeError, EncodeError, ULID_LEN};
 
 macro_rules! bitmask {
-    ($len:expr) => { ((1 << $len) - 1) }
+    ($len:expr) => {
+        ((1 << $len) - 1)
+    };
 }
 
 /// A Ulid is a unique 128-bit lexicographically sortable identifier
@@ -284,10 +284,7 @@ impl From<(u64, u64)> for Ulid {
 
 impl From<Ulid> for (u64, u64) {
     fn from(ulid: Ulid) -> (u64, u64) {
-        (
-            (ulid.0 >> 64) as u64,
-            (ulid.0 & bitmask!(64)) as u64,
-        )
+        ((ulid.0 >> 64) as u64, (ulid.0 & bitmask!(64)) as u64)
     }
 }
 
@@ -325,8 +322,9 @@ pub enum MonotonicError {
     Overflow,
 }
 
-impl fmt::Display for MonotonicError
-{
+impl std::error::Error for MonotonicError {}
+
+impl fmt::Display for MonotonicError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         let text = match *self {
             MonotonicError::Overflow => "Ulid random bits would overflow",
@@ -356,7 +354,7 @@ impl Generator {
     /// ```
     pub fn new() -> Generator {
         Generator {
-            previous: Ulid::nil()
+            previous: Ulid::nil(),
         }
     }
 
@@ -422,12 +420,9 @@ impl Generator {
     ///
     /// assert!(ulid1 < ulid2);
     /// ```
-    pub fn generate_with_source<R>(
-        &mut self,
-        source: &mut R
-    ) -> Result<Ulid, MonotonicError>
-        where
-            R: rand::Rng,
+    pub fn generate_with_source<R>(&mut self, source: &mut R) -> Result<Ulid, MonotonicError>
+    where
+        R: rand::Rng,
     {
         let now = Utc::now();
         self.generate_from_datetime_with_source(now, source)
@@ -457,7 +452,7 @@ impl Generator {
     pub fn generate_from_datetime_with_source<T, R>(
         &mut self,
         datetime: DateTime<T>,
-        source: &mut R
+        source: &mut R,
     ) -> Result<Ulid, MonotonicError>
     where
         T: TimeZone,

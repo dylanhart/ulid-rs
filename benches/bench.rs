@@ -1,6 +1,6 @@
 use bencher::{benchmark_group, benchmark_main, Bencher};
 use chrono::Utc;
-use ulid::{Ulid, Generator, ULID_LEN};
+use ulid::{Generator, Ulid, ULID_LEN};
 
 fn bench_new(b: &mut Bencher) {
     b.iter(|| Ulid::new());
