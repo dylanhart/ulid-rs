@@ -53,7 +53,7 @@ macro_rules! bitmask {
 /// Of the 128-bits, the first 48 are a unix timestamp in milliseconds. The
 /// remaining 80 are random. The first 48 provide for lexicographic sorting and
 /// the remaining 80 ensure that the identifier is unique.
-#[derive(Debug, PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, Default, PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct Ulid(pub u128);
 
 impl Ulid {
@@ -264,12 +264,6 @@ impl Ulid {
     }
 }
 
-impl Default for Ulid {
-    fn default() -> Self {
-        Ulid::nil()
-    }
-}
-
 impl From<Ulid> for String {
     fn from(ulid: Ulid) -> String {
         ulid.to_string()
@@ -334,6 +328,7 @@ impl fmt::Display for MonotonicError {
 }
 
 /// A Ulid generator that provides monotonically increasing Ulids
+#[derive(Default)]
 pub struct Generator {
     previous: Ulid,
 }
@@ -353,9 +348,7 @@ impl Generator {
     /// assert!(ulid1 < ulid2);
     /// ```
     pub fn new() -> Generator {
-        Generator {
-            previous: Ulid::nil(),
-        }
+        Default::default()
     }
 
     /// Generate a new Ulid. Each call is guaranteed to provide a Ulid with a larger value than the
@@ -472,12 +465,6 @@ impl Generator {
         let next = Ulid::from_datetime_with_source(datetime, source);
         self.previous = next;
         Ok(next)
-    }
-}
-
-impl Default for Generator {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
