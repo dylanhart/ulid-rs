@@ -232,6 +232,7 @@ impl Ulid {
     ///
     /// assert_eq!(&ulid.to_string(), text);
     /// ```
+    #[allow(clippy::inherent_to_string_shadow_display)] // Significantly faster than Display::to_string
     pub fn to_string(&self) -> String {
         base32::encode(self.0)
     }

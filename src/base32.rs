@@ -1,4 +1,3 @@
-use lazy_static::lazy_static;
 use std::fmt;
 
 /// Length of a string-encoded Ulid
@@ -6,18 +5,36 @@ pub const ULID_LEN: usize = 26;
 
 const ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
-lazy_static! {
-    static ref LOOKUP: [Option<u8>; 256] = {
-        let mut lookup = [None; 256];
-        for (i, &c) in ALPHABET.iter().enumerate() {
-            lookup[c as usize] = Some(i as u8);
-            if !(c as char).is_numeric() {
-                //lowercase
-                lookup[(c+32) as usize] = Some(i as u8);
-            }
+const NO_VALUE: u8 = 255;
+const LOOKUP: [u8; 256] = [
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 255, 255, 255,
+    255, 255, 255, 255, 10, 11, 12, 13, 14, 15, 16, 17, 255, 18, 19, 255, 20, 21, 255, 22, 23, 24,
+    25, 26, 255, 27, 28, 29, 30, 31, 255, 255, 255, 255, 255, 255, 10, 11, 12, 13, 14, 15, 16, 17,
+    255, 18, 19, 255, 20, 21, 255, 22, 23, 24, 25, 26, 255, 27, 28, 29, 30, 31, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+];
+
+/// Generator code for `LOOKUP`
+#[cfg(test)]
+#[test]
+fn test_lookup_table() {
+    let mut lookup = [NO_VALUE; 256];
+    for (i, &c) in ALPHABET.iter().enumerate() {
+        lookup[c as usize] = i as u8;
+        if !(c as char).is_numeric() {
+            //lowercase
+            lookup[(c + 32) as usize] = i as u8;
         }
-        lookup
-    };
+    }
+    assert_eq!(LOOKUP, lookup);
 }
 
 /// An error that can occur when encoding a base32 string
@@ -91,7 +108,8 @@ pub fn decode(encoded: &str) -> Result<u128, DecodeError> {
     let bytes = encoded.as_bytes();
 
     for i in 0..ULID_LEN {
-        if let Some(val) = LOOKUP[bytes[i] as usize] {
+        let val = LOOKUP[bytes[i] as usize];
+        if val != NO_VALUE {
             value = (value << 5) | u128::from(val);
         } else {
             return Err(DecodeError::InvalidChar);
