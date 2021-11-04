@@ -1,6 +1,5 @@
 # ulid-rs
 
-[![Build Status](https://travis-ci.org/dylanhart/ulid-rs.svg?branch=master)](https://travis-ci.org/dylanhart/ulid-rs)
 [![Crates.io](https://img.shields.io/crates/v/ulid.svg)](https://crates.io/crates/ulid)
 [![docs.rs](https://docs.rs/ulid/badge.svg)](https://docs.rs/ulid)
 
