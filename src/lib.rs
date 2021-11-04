@@ -4,7 +4,7 @@
 //! This is a Rust implementation of the [ulid][ulid] project which provides
 //! Universally Unique Lexicographically Sortable Identifiers.
 //!
-//! [ulid]: https://github.com/alizain/ulid
+//! [ulid]: https://github.com/ulid/spec
 //!
 //!
 //! ## Quickstart
@@ -12,6 +12,9 @@
 //! ```rust
 //! # use ulid::Ulid;
 //! // Generate a ulid
+//! # #[cfg(not(feature = "std"))]
+//! # let ulid = Ulid::default();
+//! # #[cfg(feature = "std")]
 //! let ulid = Ulid::new();
 //!
 //! // Generate a string for a ulid
@@ -26,24 +29,37 @@
 //! assert_eq!(ulid, res.unwrap());
 //!
 //! ```
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[doc = include_str!("../README.md")]
+#[cfg(all(doctest, feature = "std"))]
+struct ReadMeDoctest;
 
 mod base32;
+#[cfg(feature = "std")]
+mod chrono;
+#[cfg(feature = "std")]
+mod generator;
 #[cfg(feature = "serde")]
 pub mod serde;
 #[cfg(feature = "uuid")]
 mod uuid;
 
-use chrono::prelude::{DateTime, TimeZone, Utc};
-use std::fmt;
-use std::str::FromStr;
+use core::fmt;
+use core::str::FromStr;
 
 pub use crate::base32::{DecodeError, EncodeError, ULID_LEN};
+#[cfg(feature = "std")]
+pub use crate::generator::{Generator, MonotonicError};
 
+/// Create a right-aligned bitmask of $len bits
 macro_rules! bitmask {
     ($len:expr) => {
         ((1 << $len) - 1)
     };
 }
+// Allow other modules to use the macro
+pub(crate) use bitmask;
 
 /// A Ulid is a unique 128-bit lexicographically sortable identifier
 ///
@@ -57,74 +73,29 @@ macro_rules! bitmask {
 pub struct Ulid(pub u128);
 
 impl Ulid {
-    const TIME_BITS: u8 = 48;
-    const RAND_BITS: u8 = 80;
+    /// The number of bits in a Ulid's time portion
+    pub const TIME_BITS: u8 = 48;
+    /// The number of bits in a Ulid's random portion
+    pub const RAND_BITS: u8 = 80;
 
-    /// Creates a new Ulid with the current time (UTC)
+    /// Create a Ulid from separated parts.
+    ///
+    /// NOTE: Any overflow bits in the given args are discarded
     ///
     /// # Example
     /// ```rust
     /// use ulid::Ulid;
     ///
-    /// let my_ulid = Ulid::new();
+    /// let ulid = Ulid::from_string("01D39ZY06FGSCTVN4T2V9PKHFZ").unwrap();
+    ///
+    /// let ulid2 = Ulid::from_parts(ulid.timestamp_ms(), ulid.random());
+    ///
+    /// assert_eq!(ulid, ulid2);
     /// ```
-    pub fn new() -> Ulid {
-        Ulid::from_datetime(Utc::now())
-    }
-
-    /// Creates a new Ulid using data from the given random number generator
-    ///
-    /// # Example
-    /// ```rust
-    /// use rand::FromEntropy;
-    /// use rand::rngs::SmallRng;
-    /// use ulid::Ulid;
-    ///
-    /// let mut rng = SmallRng::from_entropy();
-    /// let ulid = Ulid::with_source(&mut rng);
-    /// ```
-    pub fn with_source<R: rand::Rng>(source: &mut R) -> Ulid {
-        Ulid::from_datetime_with_source(Utc::now(), source)
-    }
-
-    /// Creates a new Ulid with the given datetime
-    ///
-    /// This can be useful when migrating data to use Ulid identifiers
-    ///
-    /// # Example
-    /// ```rust
-    /// use chrono::offset::Utc;
-    /// use ulid::Ulid;
-    ///
-    /// let ulid = Ulid::from_datetime(Utc::now());
-    /// ```
-    pub fn from_datetime<T: TimeZone>(datetime: DateTime<T>) -> Ulid {
-        Ulid::from_datetime_with_source(datetime, &mut rand::thread_rng())
-    }
-
-    /// Creates a new Ulid with the given datetime and random number generator
-    ///
-    /// # Example
-    /// ```rust
-    /// use chrono::offset::Utc;
-    /// use rand::FromEntropy;
-    /// use rand::rngs::SmallRng;
-    /// use ulid::Ulid;
-    ///
-    /// let mut rng = SmallRng::from_entropy();
-    /// let ulid = Ulid::from_datetime_with_source(Utc::now(), &mut rng);
-    /// ```
-    pub fn from_datetime_with_source<T, R>(datetime: DateTime<T>, source: &mut R) -> Ulid
-    where
-        T: TimeZone,
-        R: rand::Rng,
-    {
-        let timestamp = datetime.timestamp_millis();
-        let timebits = (timestamp & bitmask!(Self::TIME_BITS)) as u64;
-
-        let msb = timebits << 16 | u64::from(source.gen::<u16>());
-        let lsb = source.gen::<u64>();
-        Ulid::from((msb, lsb))
+    pub const fn from_parts(timestamp_ms: u64, random: u128) -> Ulid {
+        let time_part = (timestamp_ms & bitmask!(Self::TIME_BITS)) as u128;
+        let rand_part = random & bitmask!(Self::RAND_BITS);
+        Ulid((time_part << Self::RAND_BITS) | rand_part)
     }
 
     /// Creates a Ulid from a Crockford Base32 encoded string
@@ -142,8 +113,11 @@ impl Ulid {
     /// assert!(result.is_ok());
     /// assert_eq!(&result.unwrap().to_string(), text);
     /// ```
-    pub fn from_string(encoded: &str) -> Result<Ulid, DecodeError> {
-        base32::decode(encoded).map(Ulid)
+    pub const fn from_string(encoded: &str) -> Result<Ulid, DecodeError> {
+        match base32::decode(encoded) {
+            Ok(int_val) => Ok(Ulid(int_val)),
+            Err(err) => Err(err),
+        }
     }
 
     /// The 'nil Ulid'.
@@ -162,44 +136,42 @@ impl Ulid {
     ///     "00000000000000000000000000"
     /// );
     /// ```
-    pub fn nil() -> Ulid {
+    pub const fn nil() -> Ulid {
         Ulid(0)
-    }
-
-    /// Gets the datetime of when this Ulid was created accurate to 1ms
-    ///
-    /// # Example
-    /// ```rust
-    /// use chrono::Duration;
-    /// use chrono::offset::Utc;
-    /// use ulid::Ulid;
-    ///
-    /// let dt = Utc::now();
-    /// let ulid = Ulid::from_datetime(dt);
-    ///
-    /// assert!((dt - ulid.datetime()) < Duration::milliseconds(1));
-    /// ```
-    pub fn datetime(&self) -> DateTime<Utc> {
-        let stamp = self.timestamp_ms();
-        let secs = stamp / 1000;
-        let millis = stamp % 1000;
-        Utc.timestamp(secs as i64, (millis * 1_000_000) as u32)
     }
 
     /// Gets the timestamp section of this ulid
     ///
     /// # Example
     /// ```rust
-    /// use chrono::offset::Utc;
+    /// # #[cfg(feature = "std")] {
+    /// use ::chrono::offset::Utc;
     /// use ulid::Ulid;
     ///
     /// let dt = Utc::now();
     /// let ulid = Ulid::from_datetime(dt);
     ///
     /// assert_eq!(ulid.timestamp_ms(), dt.timestamp_millis() as u64);
+    /// # }
     /// ```
-    pub fn timestamp_ms(&self) -> u64 {
+    pub const fn timestamp_ms(&self) -> u64 {
         (self.0 >> Self::RAND_BITS) as u64
+    }
+
+    /// Gets the random section of this ulid
+    ///
+    /// # Example
+    /// ```rust
+    /// use ulid::Ulid;
+    ///
+    /// let text = "01D39ZY06FGSCTVN4T2V9PKHFZ";
+    /// let ulid = Ulid::from_string(text).unwrap();
+    /// let ulid_next = ulid.increment().unwrap();
+    ///
+    /// assert_eq!(ulid.random() + 1, ulid_next.random());
+    /// ```
+    pub const fn random(&self) -> u128 {
+        self.0 & bitmask!(Self::RAND_BITS)
     }
 
     /// Creates a Crockford Base32 encoded string that represents this Ulid
@@ -218,7 +190,7 @@ impl Ulid {
     /// ```
     pub fn to_str<'buf>(&self, buf: &'buf mut [u8]) -> Result<&'buf mut str, EncodeError> {
         let len = base32::encode_to(self.0, buf)?;
-        Ok(unsafe { std::str::from_utf8_unchecked_mut(&mut buf[..len]) })
+        Ok(unsafe { core::str::from_utf8_unchecked_mut(&mut buf[..len]) })
     }
 
     /// Creates a Crockford Base32 encoded string that represents this Ulid
@@ -232,6 +204,8 @@ impl Ulid {
     ///
     /// assert_eq!(&ulid.to_string(), text);
     /// ```
+    #[allow(clippy::inherent_to_string_shadow_display)] // Significantly faster than Display::to_string
+    #[cfg(feature = "std")]
     pub fn to_string(&self) -> String {
         base32::encode(self.0)
     }
@@ -242,18 +216,21 @@ impl Ulid {
     /// ```rust
     /// use ulid::Ulid;
     ///
+    /// # #[cfg(not(feature = "std"))]
+    /// # let ulid = Ulid(1);
+    /// # #[cfg(feature = "std")]
     /// let ulid = Ulid::new();
     /// assert!(!ulid.is_nil());
     ///
     /// let nil = Ulid::nil();
     /// assert!(nil.is_nil());
     /// ```
-    pub fn is_nil(&self) -> bool {
+    pub const fn is_nil(&self) -> bool {
         self.0 == 0u128
     }
 
     /// Increment the random number, make sure that the ts millis stays the same
-    fn increment(&self) -> Option<Ulid> {
+    pub const fn increment(&self) -> Option<Ulid> {
         const MAX_RANDOM: u128 = bitmask!(Ulid::RAND_BITS);
 
         if (self.0 & MAX_RANDOM) == MAX_RANDOM {
@@ -270,6 +247,7 @@ impl Default for Ulid {
     }
 }
 
+#[cfg(feature = "std")]
 impl From<Ulid> for String {
     fn from(ulid: Ulid) -> String {
         ulid.to_string()
@@ -315,188 +293,9 @@ impl fmt::Display for Ulid {
     }
 }
 
-/// Error while trying to generate a monotonic increment in the same millisecond
-#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
-pub enum MonotonicError {
-    /// Would overflow into the next millisecond
-    Overflow,
-}
-
-impl std::error::Error for MonotonicError {}
-
-impl fmt::Display for MonotonicError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        let text = match *self {
-            MonotonicError::Overflow => "Ulid random bits would overflow",
-        };
-        write!(f, "{}", text)
-    }
-}
-
-/// A Ulid generator that provides monotonically increasing Ulids
-pub struct Generator {
-    previous: Ulid,
-}
-
-impl Generator {
-    /// Create a new ulid generator for monotonically ordered ulids
-    ///
-    /// # Example
-    /// ```rust
-    /// use ulid::Generator;
-    ///
-    /// let mut gen = Generator::new();
-    ///
-    /// let ulid1 = gen.generate().unwrap();
-    /// let ulid2 = gen.generate().unwrap();
-    ///
-    /// assert!(ulid1 < ulid2);
-    /// ```
-    pub fn new() -> Generator {
-        Generator {
-            previous: Ulid::nil(),
-        }
-    }
-
-    /// Generate a new Ulid. Each call is guaranteed to provide a Ulid with a larger value than the
-    /// last call. If the random bits would overflow, this method will return an error.
-    ///
-    /// ```rust
-    /// use ulid::Generator;
-    /// let mut gen = Generator::new();
-    ///
-    /// let ulid1 = gen.generate().unwrap();
-    /// let ulid2 = gen.generate().unwrap();
-    ///
-    /// assert!(ulid1 < ulid2);
-    /// ```
-    pub fn generate(&mut self) -> Result<Ulid, MonotonicError> {
-        let now = Utc::now();
-        self.generate_from_datetime(now)
-    }
-
-    /// Generate a new Ulid matching the given DateTime.
-    /// Each call is guaranteed to provide a Ulid with a larger value than the last call.
-    /// If the random bits would overflow, this method will return an error.
-    ///
-    /// # Example
-    /// ```rust
-    /// use ulid::Generator;
-    /// use chrono::Utc;
-    ///
-    /// let dt = Utc::now();
-    /// let mut gen = Generator::new();
-    ///
-    /// let ulid1 = gen.generate_from_datetime(dt).unwrap();
-    /// let ulid2 = gen.generate_from_datetime(dt).unwrap();
-    ///
-    /// assert_eq!(ulid1.datetime(), ulid2.datetime());
-    /// assert!(ulid1 < ulid2);
-    /// ```
-    pub fn generate_from_datetime<T: TimeZone>(
-        &mut self,
-        datetime: DateTime<T>,
-    ) -> Result<Ulid, MonotonicError> {
-        self.generate_from_datetime_with_source(datetime, &mut rand::thread_rng())
-    }
-
-    /// Generate a new monotonic increasing Ulid with the given source
-    /// Each call is guaranteed to provide a Ulid with a larger value than the last call.
-    /// If the random bits would overflow, this method will return an error.
-    ///
-    /// # Example
-    /// ```rust
-    /// use ulid::Generator;
-    /// use ulid::Ulid;
-    /// use chrono::Utc;
-    /// use rand::FromEntropy;
-    /// use rand::rngs::SmallRng;
-    ///
-    /// let mut rng = SmallRng::from_entropy();
-    /// let mut gen = Generator::new();
-    ///
-    /// let ulid1 = gen.generate_with_source(&mut rng).unwrap();
-    /// let ulid2 = gen.generate_with_source(&mut rng).unwrap();
-    ///
-    /// assert!(ulid1 < ulid2);
-    /// ```
-    pub fn generate_with_source<R>(&mut self, source: &mut R) -> Result<Ulid, MonotonicError>
-    where
-        R: rand::Rng,
-    {
-        let now = Utc::now();
-        self.generate_from_datetime_with_source(now, source)
-    }
-
-    /// Generate a new monotonic increasing Ulid with the given source matching the given DateTime
-    /// Each call is guaranteed to provide a Ulid with a larger value than the last call.
-    /// If the random bits would overflow, this method will return an error.
-    ///
-    /// # Example
-    /// ```rust
-    /// use ulid::Generator;
-    /// use chrono::Utc;
-    /// use rand::FromEntropy;
-    /// use rand::rngs::SmallRng;
-    ///
-    /// let dt = Utc::now();
-    /// let mut rng = SmallRng::from_entropy();
-    /// let mut gen = Generator::new();
-    ///
-    /// let ulid1 = gen.generate_from_datetime_with_source(dt, &mut rng).unwrap();
-    /// let ulid2 = gen.generate_from_datetime_with_source(dt, &mut rng).unwrap();
-    ///
-    /// assert_eq!(ulid1.datetime(), ulid2.datetime());
-    /// assert!(ulid1 < ulid2);
-    /// ```
-    pub fn generate_from_datetime_with_source<T, R>(
-        &mut self,
-        datetime: DateTime<T>,
-        source: &mut R,
-    ) -> Result<Ulid, MonotonicError>
-    where
-        T: TimeZone,
-        R: rand::Rng,
-    {
-        let last_ms = self.previous.timestamp_ms() as i64;
-        // maybe time went backward, or it is the same ms.
-        // increment instead of generating a new random so that it is monotonic
-        if datetime.timestamp_millis() <= last_ms {
-            if let Some(next) = self.previous.increment() {
-                self.previous = next;
-                return Ok(next);
-            } else {
-                return Err(MonotonicError::Overflow);
-            }
-        }
-        let next = Ulid::from_datetime_with_source(datetime, source);
-        self.previous = next;
-        Ok(next)
-    }
-}
-
-impl Default for Generator {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests {
     use super::*;
-    use chrono::Duration;
-
-    #[test]
-    fn test_dynamic() {
-        let ulid = Ulid::new();
-        let encoded = ulid.to_string();
-        let ulid2 = Ulid::from_string(&encoded).expect("failed to deserialize");
-
-        println!("{}", encoded);
-        println!("{:?}", ulid);
-        println!("{:?}", ulid2);
-        assert_eq!(ulid, ulid2);
-    }
 
     #[test]
     fn test_static() {
@@ -504,53 +303,6 @@ mod tests {
         let u = Ulid::from_string(&s).unwrap();
         assert_eq!(&s, "21850M2GA1850M2GA1850M2GA1");
         assert_eq!(u.0, 0x41414141414141414141414141414141);
-    }
-
-    #[test]
-    fn test_source() {
-        use rand::rngs::mock::StepRng;
-        let mut source = StepRng::new(123, 0);
-
-        let u1 = Ulid::with_source(&mut source);
-        let dt = Utc::now() + Duration::milliseconds(1);
-        let u2 = Ulid::from_datetime_with_source(dt, &mut source);
-        let u3 = Ulid::from_datetime_with_source(dt, &mut source);
-
-        assert!(u1 < u2);
-        assert_eq!(u2, u3);
-    }
-
-    #[test]
-    fn test_order() {
-        let dt = Utc::now();
-        let ulid1 = Ulid::from_datetime(dt);
-        let ulid2 = Ulid::from_datetime(dt + Duration::milliseconds(1));
-        assert!(ulid1 < ulid2);
-    }
-
-    #[test]
-    fn test_order_monotonic() {
-        let dt = Utc::now();
-        let mut gen = Generator::new();
-        let ulid1 = gen.generate_from_datetime(dt).unwrap();
-        let ulid2 = gen.generate_from_datetime(dt).unwrap();
-        let ulid3 = Ulid::from_datetime(dt + Duration::milliseconds(1));
-        assert_eq!(ulid1.0 + 1, ulid2.0);
-        assert!(ulid2 < ulid3);
-        assert!(ulid2.timestamp_ms() < ulid3.timestamp_ms())
-    }
-
-    #[test]
-    fn test_order_monotonic_with_source() {
-        use rand::rngs::mock::StepRng;
-        let mut source = StepRng::new(123, 0);
-        let mut gen = Generator::new();
-
-        let _has_default = Generator::default();
-
-        let ulid1 = gen.generate_with_source(&mut source).unwrap();
-        let ulid2 = gen.generate_with_source(&mut source).unwrap();
-        assert!(ulid1 < ulid2);
     }
 
     #[test]
@@ -574,27 +326,8 @@ mod tests {
     }
 
     #[test]
-    fn test_datetime() {
-        let dt = Utc::now();
-        let ulid = Ulid::from_datetime(dt);
-
-        println!("{:?}, {:?}", dt, ulid.datetime());
-        assert!(ulid.datetime() <= dt);
-        assert!(ulid.datetime() + Duration::milliseconds(1) >= dt);
-    }
-
-    #[test]
-    fn test_timestamp() {
-        let dt = Utc::now();
-        let ulid = Ulid::from_datetime(dt);
-        let ts = dt.timestamp() as u64 * 1000 + dt.timestamp_subsec_millis() as u64;
-
-        assert_eq!(ulid.timestamp_ms(), ts);
-    }
-
-    #[test]
     fn can_into_thing() {
-        let ulid = Ulid::new();
+        let ulid = Ulid::from_str("01FKMG6GAG0PJANMWFN84TNXCD").unwrap();
         let s: String = ulid.into();
         let u: u128 = ulid.into();
         let uu: (u64, u64) = ulid.into();
@@ -611,10 +344,9 @@ mod tests {
 
     #[test]
     fn can_display_things() {
-        println!("{}", Ulid::new());
+        println!("{}", Ulid::nil());
         println!("{}", EncodeError::BufferTooSmall);
         println!("{}", DecodeError::InvalidLength);
         println!("{}", DecodeError::InvalidChar);
-        println!("{}", MonotonicError::Overflow);
     }
 }
