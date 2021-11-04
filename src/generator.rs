@@ -2,7 +2,7 @@ use chrono::prelude::{DateTime, TimeZone, Utc};
 
 use std::fmt;
 
-use crate::{Ulid};
+use crate::Ulid;
 
 /// A Ulid generator that provides monotonically increasing Ulids
 pub struct Generator {

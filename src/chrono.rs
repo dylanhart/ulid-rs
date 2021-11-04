@@ -1,6 +1,6 @@
 use ::chrono::prelude::{DateTime, TimeZone, Utc};
 
-use crate::{Ulid, bitmask};
+use crate::{bitmask, Ulid};
 
 impl Ulid {
     /// Creates a new Ulid with the current time (UTC)

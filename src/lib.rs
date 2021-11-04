@@ -36,14 +36,14 @@
 struct ReadMeDoctest;
 
 mod base32;
-#[cfg(feature = "serde")]
-pub mod serde;
-#[cfg(feature = "uuid")]
-mod uuid;
 #[cfg(feature = "std")]
 mod chrono;
 #[cfg(feature = "std")]
 mod generator;
+#[cfg(feature = "serde")]
+pub mod serde;
+#[cfg(feature = "uuid")]
+mod uuid;
 
 use core::fmt;
 use core::str::FromStr;
@@ -78,6 +78,26 @@ impl Ulid {
     /// The number of bits in a Ulid's random portion
     pub const RAND_BITS: u8 = 80;
 
+    /// Create a Ulid from separated parts.
+    ///
+    /// NOTE: Any overflow bits in the given args are discarded
+    ///
+    /// # Example
+    /// ```rust
+    /// use ulid::Ulid;
+    ///
+    /// let ulid = Ulid::from_string("01D39ZY06FGSCTVN4T2V9PKHFZ").unwrap();
+    ///
+    /// let ulid2 = Ulid::from_parts(ulid.timestamp_ms(), ulid.random());
+    ///
+    /// assert_eq!(ulid, ulid2);
+    /// ```
+    pub const fn from_parts(timestamp_ms: u64, random: u128) -> Ulid {
+        let time_part = (timestamp_ms & bitmask!(Self::TIME_BITS)) as u128;
+        let rand_part = random & bitmask!(Self::RAND_BITS);
+        Ulid((time_part << Self::RAND_BITS) | rand_part)
+    }
+
     /// Creates a Ulid from a Crockford Base32 encoded string
     ///
     /// An DecodeError will be returned when the given string is not formated
@@ -94,8 +114,7 @@ impl Ulid {
     /// assert_eq!(&result.unwrap().to_string(), text);
     /// ```
     pub const fn from_string(encoded: &str) -> Result<Ulid, DecodeError> {
-        match base32::decode(encoded)
-        {
+        match base32::decode(encoded) {
             Ok(int_val) => Ok(Ulid(int_val)),
             Err(err) => Err(err),
         }
@@ -137,6 +156,22 @@ impl Ulid {
     /// ```
     pub const fn timestamp_ms(&self) -> u64 {
         (self.0 >> Self::RAND_BITS) as u64
+    }
+
+    /// Gets the random section of this ulid
+    ///
+    /// # Example
+    /// ```rust
+    /// use ulid::Ulid;
+    ///
+    /// let text = "01D39ZY06FGSCTVN4T2V9PKHFZ";
+    /// let ulid = Ulid::from_string(text).unwrap();
+    /// let ulid_next = ulid.increment().unwrap();
+    ///
+    /// assert_eq!(ulid.random() + 1, ulid_next.random());
+    /// ```
+    pub const fn random(&self) -> u128 {
+        self.0 & bitmask!(Self::RAND_BITS)
     }
 
     /// Creates a Crockford Base32 encoded string that represents this Ulid
