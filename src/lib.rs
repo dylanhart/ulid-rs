@@ -92,8 +92,12 @@ impl Ulid {
     /// assert!(result.is_ok());
     /// assert_eq!(&result.unwrap().to_string(), text);
     /// ```
-    pub fn from_string(encoded: &str) -> Result<Ulid, DecodeError> {
-        base32::decode(encoded).map(Ulid)
+    pub const fn from_string(encoded: &str) -> Result<Ulid, DecodeError> {
+        match base32::decode(encoded)
+        {
+            Ok(int_val) => Ok(Ulid(int_val)),
+            Err(err) => Err(err),
+        }
     }
 
     /// The 'nil Ulid'.

@@ -98,7 +98,7 @@ impl fmt::Display for DecodeError {
     }
 }
 
-pub fn decode(encoded: &str) -> Result<u128, DecodeError> {
+pub const fn decode(encoded: &str) -> Result<u128, DecodeError> {
     if encoded.len() != ULID_LEN {
         return Err(DecodeError::InvalidLength);
     }
@@ -107,13 +107,15 @@ pub fn decode(encoded: &str) -> Result<u128, DecodeError> {
 
     let bytes = encoded.as_bytes();
 
-    for i in 0..ULID_LEN {
+    let mut i = 0;
+    while i < ULID_LEN {
         let val = LOOKUP[bytes[i] as usize];
         if val != NO_VALUE {
-            value = (value << 5) | u128::from(val);
+            value = (value << 5) | val as u128;
         } else {
             return Err(DecodeError::InvalidChar);
         }
+        i += 1;
     }
 
     Ok(value)
