@@ -116,7 +116,7 @@ impl Ulid {
     ///     "00000000000000000000000000"
     /// );
     /// ```
-    pub fn nil() -> Ulid {
+    pub const fn nil() -> Ulid {
         Ulid(0)
     }
 
@@ -134,7 +134,7 @@ impl Ulid {
     /// assert_eq!(ulid.timestamp_ms(), dt.timestamp_millis() as u64);
     /// # }
     /// ```
-    pub fn timestamp_ms(&self) -> u64 {
+    pub const fn timestamp_ms(&self) -> u64 {
         (self.0 >> Self::RAND_BITS) as u64
     }
 
@@ -188,12 +188,12 @@ impl Ulid {
     /// let nil = Ulid::nil();
     /// assert!(nil.is_nil());
     /// ```
-    pub fn is_nil(&self) -> bool {
+    pub const fn is_nil(&self) -> bool {
         self.0 == 0u128
     }
 
     /// Increment the random number, make sure that the ts millis stays the same
-    pub fn increment(&self) -> Option<Ulid> {
+    pub const fn increment(&self) -> Option<Ulid> {
         const MAX_RANDOM: u128 = bitmask!(Ulid::RAND_BITS);
 
         if (self.0 & MAX_RANDOM) == MAX_RANDOM {

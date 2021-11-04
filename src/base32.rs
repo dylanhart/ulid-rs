@@ -57,6 +57,8 @@ impl fmt::Display for EncodeError {
 
 /// Encode a u128 value to a given buffer. The provided buffer should be at least `ULID_LEN` long.
 pub fn encode_to(mut value: u128, buffer: &mut [u8]) -> Result<usize, EncodeError> {
+    // NOTE: This function can't be made const because mut refs aren't allowed for some reason
+
     if buffer.len() < ULID_LEN {
         return Err(EncodeError::BufferTooSmall);
     }
@@ -107,6 +109,7 @@ pub const fn decode(encoded: &str) -> Result<u128, DecodeError> {
 
     let bytes = encoded.as_bytes();
 
+    // Manual for loop because Range::iter() isn't const
     let mut i = 0;
     while i < ULID_LEN {
         let val = LOOKUP[bytes[i] as usize];
