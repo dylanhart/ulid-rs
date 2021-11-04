@@ -12,9 +12,9 @@
 //! ```rust
 //! # use ulid::Ulid;
 //! // Generate a ulid
-//! # #[cfg(not(feature = "chrono"))]
+//! # #[cfg(not(feature = "std"))]
 //! # let ulid = Ulid::default();
-//! # #[cfg(feature = "chrono")]
+//! # #[cfg(feature = "std")]
 //! let ulid = Ulid::new();
 //!
 //! // Generate a string for a ulid
@@ -32,7 +32,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[doc = include_str!("../README.md")]
-#[cfg(all(doctest, feature = "chrono"))]
+#[cfg(all(doctest, feature = "std"))]
 struct ReadMeDoctest;
 
 mod base32;
@@ -40,16 +40,16 @@ mod base32;
 pub mod serde;
 #[cfg(feature = "uuid")]
 mod uuid;
-#[cfg(feature = "chrono")]
+#[cfg(feature = "std")]
 mod chrono;
-#[cfg(feature = "chrono")]
+#[cfg(feature = "std")]
 mod generator;
 
 use core::fmt;
 use core::str::FromStr;
 
 pub use crate::base32::{DecodeError, EncodeError, ULID_LEN};
-#[cfg(feature = "chrono")]
+#[cfg(feature = "std")]
 pub use crate::generator::{Generator, MonotonicError};
 
 /// Create a right-aligned bitmask of $len bits
@@ -125,7 +125,7 @@ impl Ulid {
     ///
     /// # Example
     /// ```rust
-    /// # #[cfg(feature = "chrono")] {
+    /// # #[cfg(feature = "std")] {
     /// use ::chrono::offset::Utc;
     /// use ulid::Ulid;
     ///
@@ -181,9 +181,9 @@ impl Ulid {
     /// ```rust
     /// use ulid::Ulid;
     ///
-    /// # #[cfg(not(feature = "chrono"))]
+    /// # #[cfg(not(feature = "std"))]
     /// # let ulid = Ulid(1);
-    /// # #[cfg(feature = "chrono")]
+    /// # #[cfg(feature = "std")]
     /// let ulid = Ulid::new();
     /// assert!(!ulid.is_nil());
     ///

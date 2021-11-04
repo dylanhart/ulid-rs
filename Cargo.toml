@@ -13,8 +13,8 @@ keywords = ["ulid", "uuid", "sortable", "identifier"]
 repository = "https://github.com/dylanhart/ulid-rs"
 
 [features]
-default = ["std", "chrono"]
-std = []
+default = ["std"]
+std = ["rand", "chrono"]
 # chrono = ["std", "dep:chrono"]
 # uuid = ["std", "dep:uuid"]
 # serde = ["std", "dep:serde"]
@@ -23,13 +23,12 @@ std = []
 serde = { version = "1.0", features = ["derive"], optional = true }
 # -- Sync versions with the WASM target below --
 chrono = { version = "0.4", optional = true }
-rand = "0.8"
+rand = { version = "0.8", optional = true }
 uuid = { version = "0.8", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 # -- Sync versions with non-WASM targets above --
-chrono = { version = "0.4", features = ["wasmbind"] }
-rand = { version = "0.6", features = ["wasm-bindgen"] }
+chrono = { version = "0.4", features = ["wasmbind"], optional = true }
 uuid = { version = "0.8", features = ["wasm-bindgen"], optional = true }
 
 [dev-dependencies]
