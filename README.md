@@ -10,6 +10,8 @@ Universally Unique Lexicographically Sortable Identifiers.
 ## Quickstart
 
 ```rust
+use ulid::Ulid;
+
 // Generate a ulid
 let ulid = Ulid::new();
 
@@ -33,7 +35,7 @@ assert_eq!(ulid, res.unwrap());
 
 Benchmarks were run on my laptop. Run them yourself with `cargo bench`.
 
-```
+```text
 test bench_from_string        ... bench:          34 ns/iter (+/- 0)
 test bench_from_time          ... bench:          16 ns/iter (+/- 0)
 test bench_generator_generate ... bench:          56 ns/iter (+/- 0)
