@@ -1,5 +1,6 @@
 # ulid-rs
 
+![Build Status](https://github.com/dylanhart/ulid-rs/actions/workflows/ci-build.yml/badge.svg)
 [![Crates.io](https://img.shields.io/crates/v/ulid.svg)](https://crates.io/crates/ulid)
 [![docs.rs](https://docs.rs/ulid/badge.svg)](https://docs.rs/ulid)
 
@@ -25,9 +26,9 @@ let res = Ulid::from_string(&s);
 assert_eq!(ulid, res.unwrap());
 ```
 
-## Optional features
+## Crate Features
 
-* **`std`** (default): Flag to toggle use of `std`, `rand`, and `chrono`. Disable this flag for `#[no_std]` support.
+* **`std` (default)**: Flag to toggle use of `std`, `rand`, and `chrono`. Disable this flag for `#[no_std]` support.
 * **`serde`**: Enables serialization and deserialization of `Ulid` types via `serde`. ULIDs are serialized using their canonical 26-character representation as defined in the ULID standard. An optional `ulid_as_u128` module is provided, which enables serialization through an `Ulid`'s inner `u128` primitive type. See the [documentation][serde_mod] and [serde docs][serde_docs] for more information.
 * **`uuid`**: Implements infallible conversions between ULIDs and UUIDs from the [`uuid`][uuid] crate via the [`std::convert::From`][trait_from] trait.
 
