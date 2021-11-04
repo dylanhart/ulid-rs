@@ -6,6 +6,8 @@
 This is a Rust implementation of the [ulid][ulid] project which provides
 Universally Unique Lexicographically Sortable Identifiers.
 
+[ulid]: https://github.com/ulid/spec
+
 ## Quickstart
 
 ```rust
@@ -23,22 +25,26 @@ let res = Ulid::from_string(&s);
 assert_eq!(ulid, res.unwrap());
 ```
 
-[ulid]: https://github.com/ulid/spec
-
 ## Optional features
 
-* **`serde`**: Enables serialization and deserialization of `Ulid` types via `serde`. ULIDs are serialized using their canonical 26-character representation as defined in the ULID standard. An optional `ulid_as_u128` module is provided, which enables serialization through an `Ulid`'s inner `u128` primitive type. See the [documentation](https://docs.rs/ulid/latest/ulid/serde/index.html) and [serde docs](https://serde.rs/field-attrs.html#with) for more information.
-* **`uuid`**: Implements infallible conversions between ULIDs and UUIDs from the [`uuid`](https://github.com/uuid-rs/uuid) crate via the [`std::convert::From`](https://doc.rust-lang.org/std/convert/trait.From.html) trait.
+* **`std`** (default): Flag to toggle use of `std`, `rand`, and `chrono`. Disable this flag for `#[no_std]` support.
+* **`serde`**: Enables serialization and deserialization of `Ulid` types via `serde`. ULIDs are serialized using their canonical 26-character representation as defined in the ULID standard. An optional `ulid_as_u128` module is provided, which enables serialization through an `Ulid`'s inner `u128` primitive type. See the [documentation][serde_mod] and [serde docs][serde_docs] for more information.
+* **`uuid`**: Implements infallible conversions between ULIDs and UUIDs from the [`uuid`][uuid] crate via the [`std::convert::From`][trait_from] trait.
+
+[serde_mod]: https://docs.rs/ulid/latest/ulid/serde/index.html
+[serde_docs]: https://serde.rs/field-attrs.html#with
+[uuid]: https://github.com/uuid-rs/uuid
+[trait_from]: https://doc.rust-lang.org/std/convert/trait.From.html
 
 ## Benchmark
 
-Benchmarks were run on my laptop. Run them yourself with `cargo bench`.
+Benchmarks were run on my desktop (Win 10/WSL2 Ubuntu; Ryzen 7 5800x). Run them yourself with `cargo bench`.
 
 ```text
-test bench_from_string        ... bench:          34 ns/iter (+/- 0)
-test bench_from_time          ... bench:          16 ns/iter (+/- 0)
-test bench_generator_generate ... bench:          56 ns/iter (+/- 0)
-test bench_new                ... bench:          69 ns/iter (+/- 1)
-test bench_to_str             ... bench:          14 ns/iter (+/- 0)
-test bench_to_string          ... bench:         116 ns/iter (+/- 1)
+test bench_from_string        ... bench:          13 ns/iter (+/- 1)
+test bench_from_time          ... bench:           8 ns/iter (+/- 0)
+test bench_generator_generate ... bench:          42 ns/iter (+/- 0)
+test bench_new                ... bench:          44 ns/iter (+/- 1)
+test bench_to_str             ... bench:           7 ns/iter (+/- 0)
+test bench_to_string          ... bench:          20 ns/iter (+/- 0)
 ```
