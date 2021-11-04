@@ -19,11 +19,10 @@ impl Ulid {
     ///
     /// # Example
     /// ```rust
-    /// use rand::FromEntropy;
-    /// use rand::rngs::SmallRng;
+    /// use rand::prelude::*;
     /// use ulid::Ulid;
     ///
-    /// let mut rng = SmallRng::from_entropy();
+    /// let mut rng = StdRng::from_entropy();
     /// let ulid = Ulid::with_source(&mut rng);
     /// ```
     pub fn with_source<R: rand::Rng>(source: &mut R) -> Ulid {
@@ -50,11 +49,10 @@ impl Ulid {
     /// # Example
     /// ```rust
     /// use chrono::offset::Utc;
-    /// use rand::FromEntropy;
-    /// use rand::rngs::SmallRng;
+    /// use rand::prelude::*;
     /// use ulid::Ulid;
     ///
-    /// let mut rng = SmallRng::from_entropy();
+    /// let mut rng = StdRng::from_entropy();
     /// let ulid = Ulid::from_datetime_with_source(Utc::now(), &mut rng);
     /// ```
     pub fn from_datetime_with_source<T, R>(datetime: DateTime<T>, source: &mut R) -> Ulid

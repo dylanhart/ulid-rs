@@ -80,10 +80,9 @@ impl Generator {
     /// use ulid::Generator;
     /// use ulid::Ulid;
     /// use chrono::Utc;
-    /// use rand::FromEntropy;
-    /// use rand::rngs::SmallRng;
+    /// use rand::prelude::*;
     ///
-    /// let mut rng = SmallRng::from_entropy();
+    /// let mut rng = StdRng::from_entropy();
     /// let mut gen = Generator::new();
     ///
     /// let ulid1 = gen.generate_with_source(&mut rng).unwrap();
@@ -107,11 +106,10 @@ impl Generator {
     /// ```rust
     /// use ulid::Generator;
     /// use chrono::Utc;
-    /// use rand::FromEntropy;
-    /// use rand::rngs::SmallRng;
+    /// use rand::prelude::*;
     ///
     /// let dt = Utc::now();
-    /// let mut rng = SmallRng::from_entropy();
+    /// let mut rng = StdRng::from_entropy();
     /// let mut gen = Generator::new();
     ///
     /// let ulid1 = gen.generate_from_datetime_with_source(dt, &mut rng).unwrap();
