@@ -24,7 +24,7 @@ let res = Ulid::from_string(&s);
 assert_eq!(ulid, res.unwrap());
 ```
 
-[ulid]: https://github.com/alizain/ulid
+[ulid]: https://github.com/ulid/spec
 
 ## Optional features
 
