@@ -1,4 +1,4 @@
-use std::fmt;
+use core::fmt;
 
 /// Length of a string-encoded Ulid
 pub const ULID_LEN: usize = 26;
@@ -44,6 +44,7 @@ pub enum EncodeError {
     BufferTooSmall,
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for EncodeError {}
 
 impl fmt::Display for EncodeError {
@@ -71,6 +72,7 @@ pub fn encode_to(mut value: u128, buffer: &mut [u8]) -> Result<usize, EncodeErro
     Ok(ULID_LEN)
 }
 
+#[cfg(feature = "std")]
 pub fn encode(value: u128) -> String {
     let mut buffer: [u8; ULID_LEN] = [0; ULID_LEN];
 
@@ -88,6 +90,7 @@ pub enum DecodeError {
     InvalidChar,
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for DecodeError {}
 
 impl fmt::Display for DecodeError {
@@ -124,7 +127,7 @@ pub const fn decode(encoded: &str) -> Result<u128, DecodeError> {
     Ok(value)
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests {
     use super::*;
 

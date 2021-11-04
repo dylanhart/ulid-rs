@@ -13,8 +13,8 @@ keywords = ["ulid", "uuid", "sortable", "identifier"]
 repository = "https://github.com/dylanhart/ulid-rs"
 
 [features]
-default = ["chrono"]
-# std = []
+default = ["std", "chrono"]
+std = []
 # chrono = ["std", "dep:chrono"]
 # uuid = ["std", "dep:uuid"]
 # serde = ["std", "dep:serde"]

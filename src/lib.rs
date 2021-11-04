@@ -29,6 +29,7 @@
 //! assert_eq!(ulid, res.unwrap());
 //!
 //! ```
+#![cfg_attr(not(feature = "std"), no_std)]
 
 #[doc = include_str!("../README.md")]
 #[cfg(all(doctest, feature = "chrono"))]
@@ -44,8 +45,8 @@ mod chrono;
 #[cfg(feature = "chrono")]
 mod generator;
 
-use std::fmt;
-use std::str::FromStr;
+use core::fmt;
+use core::str::FromStr;
 
 pub use crate::base32::{DecodeError, EncodeError, ULID_LEN};
 #[cfg(feature = "chrono")]
@@ -154,7 +155,7 @@ impl Ulid {
     /// ```
     pub fn to_str<'buf>(&self, buf: &'buf mut [u8]) -> Result<&'buf mut str, EncodeError> {
         let len = base32::encode_to(self.0, buf)?;
-        Ok(unsafe { std::str::from_utf8_unchecked_mut(&mut buf[..len]) })
+        Ok(unsafe { core::str::from_utf8_unchecked_mut(&mut buf[..len]) })
     }
 
     /// Creates a Crockford Base32 encoded string that represents this Ulid
@@ -169,6 +170,7 @@ impl Ulid {
     /// assert_eq!(&ulid.to_string(), text);
     /// ```
     #[allow(clippy::inherent_to_string_shadow_display)] // Significantly faster than Display::to_string
+    #[cfg(feature = "std")]
     pub fn to_string(&self) -> String {
         base32::encode(self.0)
     }
@@ -210,6 +212,7 @@ impl Default for Ulid {
     }
 }
 
+#[cfg(feature = "std")]
 impl From<Ulid> for String {
     fn from(ulid: Ulid) -> String {
         ulid.to_string()
@@ -255,7 +258,7 @@ impl fmt::Display for Ulid {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests {
     use super::*;
 
