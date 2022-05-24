@@ -1,5 +1,5 @@
 use bencher::{benchmark_group, benchmark_main, Bencher};
-use chrono::Utc;
+use time::OffsetDateTime;
 use ulid::{Generator, Ulid, ULID_LEN};
 
 fn bench_new(b: &mut Bencher) {
@@ -12,7 +12,7 @@ fn bench_generator_generate(b: &mut Bencher) {
 }
 
 fn bench_from_time(b: &mut Bencher) {
-    let time = Utc::now();
+    let time = OffsetDateTime::now_utc();
     b.iter(|| Ulid::from_datetime(time));
 }
 
