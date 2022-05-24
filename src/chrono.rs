@@ -1,4 +1,4 @@
-use ::time::{OffsetDateTime};
+use ::time::OffsetDateTime;
 
 use crate::{bitmask, Ulid};
 
@@ -85,8 +85,9 @@ impl Ulid {
         let secs = stamp / 1000;
         let millis = stamp % 1000;
         OffsetDateTime::from_unix_timestamp_nanos(
-            ((secs * 1_000_000_000) + (millis * 1_000_000)) as i128
-        ).expect("Seconds and Milliseconds are out of range")
+            ((secs * 1_000_000_000) + (millis * 1_000_000)) as i128,
+        )
+        .expect("Seconds and Milliseconds are out of range")
     }
 }
 
