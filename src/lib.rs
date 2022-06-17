@@ -145,13 +145,13 @@ impl Ulid {
     /// # Example
     /// ```rust
     /// # #[cfg(feature = "std")] {
-    /// use ::chrono::offset::Utc;
+    /// use ::time::OffsetDateTime;
     /// use ulid::Ulid;
     ///
-    /// let dt = Utc::now();
+    /// let dt = OffsetDateTime::now_utc();
     /// let ulid = Ulid::from_datetime(dt);
     ///
-    /// assert_eq!(ulid.timestamp_ms(), dt.timestamp_millis() as u64);
+    /// assert_eq!(ulid.timestamp_ms(), (dt.unix_timestamp_nanos() / 1_000_000) as u64);
     /// # }
     /// ```
     pub const fn timestamp_ms(&self) -> u64 {

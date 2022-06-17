@@ -81,7 +81,7 @@ COMPONENTS:
 ",
                     ulid.to_string(),
                     upper_hex,
-                    ulid.datetime().to_rfc2822(),
+                    ulid.datetime(),
                     ulid.timestamp_ms(),
                     upper_hex.chars().skip(6).collect::<String>()
                 );

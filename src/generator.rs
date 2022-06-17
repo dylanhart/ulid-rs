@@ -1,4 +1,4 @@
-use chrono::prelude::{DateTime, TimeZone, Utc};
+use time::OffsetDateTime;
 
 use std::fmt;
 
@@ -42,7 +42,7 @@ impl Generator {
     /// assert!(ulid1 < ulid2);
     /// ```
     pub fn generate(&mut self) -> Result<Ulid, MonotonicError> {
-        let now = Utc::now();
+        let now = OffsetDateTime::now_utc();
         self.generate_from_datetime(now)
     }
 
@@ -53,9 +53,9 @@ impl Generator {
     /// # Example
     /// ```rust
     /// use ulid::Generator;
-    /// use chrono::Utc;
+    /// use time::OffsetDateTime;
     ///
-    /// let dt = Utc::now();
+    /// let dt = OffsetDateTime::now_utc();
     /// let mut gen = Generator::new();
     ///
     /// let ulid1 = gen.generate_from_datetime(dt).unwrap();
@@ -64,9 +64,9 @@ impl Generator {
     /// assert_eq!(ulid1.datetime(), ulid2.datetime());
     /// assert!(ulid1 < ulid2);
     /// ```
-    pub fn generate_from_datetime<T: TimeZone>(
+    pub fn generate_from_datetime(
         &mut self,
-        datetime: DateTime<T>,
+        datetime: OffsetDateTime,
     ) -> Result<Ulid, MonotonicError> {
         self.generate_from_datetime_with_source(datetime, &mut rand::thread_rng())
     }
@@ -79,7 +79,7 @@ impl Generator {
     /// ```rust
     /// use ulid::Generator;
     /// use ulid::Ulid;
-    /// use chrono::Utc;
+    /// use time::OffsetDateTime;
     /// use rand::prelude::*;
     ///
     /// let mut rng = StdRng::from_entropy();
@@ -94,7 +94,7 @@ impl Generator {
     where
         R: rand::Rng,
     {
-        let now = Utc::now();
+        let now = OffsetDateTime::now_utc();
         self.generate_from_datetime_with_source(now, source)
     }
 
@@ -105,10 +105,10 @@ impl Generator {
     /// # Example
     /// ```rust
     /// use ulid::Generator;
-    /// use chrono::Utc;
+    /// use time::OffsetDateTime;
     /// use rand::prelude::*;
     ///
-    /// let dt = Utc::now();
+    /// let dt = OffsetDateTime::now_utc();
     /// let mut rng = StdRng::from_entropy();
     /// let mut gen = Generator::new();
     ///
@@ -118,19 +118,18 @@ impl Generator {
     /// assert_eq!(ulid1.datetime(), ulid2.datetime());
     /// assert!(ulid1 < ulid2);
     /// ```
-    pub fn generate_from_datetime_with_source<T, R>(
+    pub fn generate_from_datetime_with_source<R>(
         &mut self,
-        datetime: DateTime<T>,
+        datetime: OffsetDateTime,
         source: &mut R,
     ) -> Result<Ulid, MonotonicError>
     where
-        T: TimeZone,
         R: rand::Rng,
     {
-        let last_ms = self.previous.timestamp_ms() as i64;
+        let last_ms = self.previous.timestamp_ms() as i128;
         // maybe time went backward, or it is the same ms.
         // increment instead of generating a new random so that it is monotonic
-        if datetime.timestamp_millis() <= last_ms {
+        if (datetime.unix_timestamp_nanos() / 1_000_000) <= last_ms {
             if let Some(next) = self.previous.increment() {
                 self.previous = next;
                 return Ok(next);
@@ -171,11 +170,11 @@ impl fmt::Display for MonotonicError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::chrono::Duration;
+    use ::time::Duration;
 
     #[test]
     fn test_order_monotonic() {
-        let dt = Utc::now();
+        let dt = OffsetDateTime::now_utc();
         let mut gen = Generator::new();
         let ulid1 = gen.generate_from_datetime(dt).unwrap();
         let ulid2 = gen.generate_from_datetime(dt).unwrap();
