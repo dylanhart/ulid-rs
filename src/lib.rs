@@ -37,7 +37,7 @@ struct ReadMeDoctest;
 
 mod base32;
 #[cfg(feature = "std")]
-mod chrono;
+mod time;
 #[cfg(feature = "std")]
 mod generator;
 #[cfg(feature = "serde")]
