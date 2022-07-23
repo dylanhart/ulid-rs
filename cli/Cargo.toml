@@ -16,3 +16,4 @@ edition = "2018"
 [dependencies]
 structopt = "0.2"
 ulid = { version = "*", path = ".." }
+time = "0.3.11"

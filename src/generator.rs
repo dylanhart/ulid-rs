@@ -1,4 +1,4 @@
-use time::OffsetDateTime;
+use std::time::{Duration, SystemTime};
 
 use std::fmt;
 
@@ -42,7 +42,7 @@ impl Generator {
     /// assert!(ulid1 < ulid2);
     /// ```
     pub fn generate(&mut self) -> Result<Ulid, MonotonicError> {
-        let now = OffsetDateTime::now_utc();
+        let now = SystemTime::now();
         self.generate_from_datetime(now)
     }
 
@@ -53,9 +53,9 @@ impl Generator {
     /// # Example
     /// ```rust
     /// use ulid::Generator;
-    /// use time::OffsetDateTime;
+    /// use std::time::SystemTime;
     ///
-    /// let dt = OffsetDateTime::now_utc();
+    /// let dt = SystemTime::now();
     /// let mut gen = Generator::new();
     ///
     /// let ulid1 = gen.generate_from_datetime(dt).unwrap();
@@ -64,10 +64,7 @@ impl Generator {
     /// assert_eq!(ulid1.datetime(), ulid2.datetime());
     /// assert!(ulid1 < ulid2);
     /// ```
-    pub fn generate_from_datetime(
-        &mut self,
-        datetime: OffsetDateTime,
-    ) -> Result<Ulid, MonotonicError> {
+    pub fn generate_from_datetime(&mut self, datetime: SystemTime) -> Result<Ulid, MonotonicError> {
         self.generate_from_datetime_with_source(datetime, &mut rand::thread_rng())
     }
 
@@ -79,7 +76,7 @@ impl Generator {
     /// ```rust
     /// use ulid::Generator;
     /// use ulid::Ulid;
-    /// use time::OffsetDateTime;
+    /// use std::time::SystemTime;
     /// use rand::prelude::*;
     ///
     /// let mut rng = StdRng::from_entropy();
@@ -94,7 +91,7 @@ impl Generator {
     where
         R: rand::Rng,
     {
-        let now = OffsetDateTime::now_utc();
+        let now = SystemTime::now();
         self.generate_from_datetime_with_source(now, source)
     }
 
@@ -105,10 +102,10 @@ impl Generator {
     /// # Example
     /// ```rust
     /// use ulid::Generator;
-    /// use time::OffsetDateTime;
+    /// use std::time::SystemTime;
     /// use rand::prelude::*;
     ///
-    /// let dt = OffsetDateTime::now_utc();
+    /// let dt = SystemTime::now();
     /// let mut rng = StdRng::from_entropy();
     /// let mut gen = Generator::new();
     ///
@@ -120,16 +117,21 @@ impl Generator {
     /// ```
     pub fn generate_from_datetime_with_source<R>(
         &mut self,
-        datetime: OffsetDateTime,
+        datetime: SystemTime,
         source: &mut R,
     ) -> Result<Ulid, MonotonicError>
     where
         R: rand::Rng,
     {
-        let last_ms = self.previous.timestamp_ms() as i128;
+        let last_ms = self.previous.timestamp_ms();
         // maybe time went backward, or it is the same ms.
         // increment instead of generating a new random so that it is monotonic
-        if (datetime.unix_timestamp_nanos() / 1_000_000) <= last_ms {
+        if datetime
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or(Duration::ZERO)
+            .as_millis()
+            <= u128::from(last_ms)
+        {
             if let Some(next) = self.previous.increment() {
                 self.previous = next;
                 return Ok(next);
@@ -170,15 +172,15 @@ impl fmt::Display for MonotonicError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::time::Duration;
+    use std::time::Duration;
 
     #[test]
     fn test_order_monotonic() {
-        let dt = OffsetDateTime::now_utc();
+        let dt = SystemTime::now();
         let mut gen = Generator::new();
         let ulid1 = gen.generate_from_datetime(dt).unwrap();
         let ulid2 = gen.generate_from_datetime(dt).unwrap();
-        let ulid3 = Ulid::from_datetime(dt + Duration::milliseconds(1));
+        let ulid3 = Ulid::from_datetime(dt + Duration::from_millis(1));
         assert_eq!(ulid1.0 + 1, ulid2.0);
         assert!(ulid2 < ulid3);
         assert!(ulid2.timestamp_ms() < ulid3.timestamp_ms())
