@@ -1,5 +1,5 @@
 name: ci-build
-on: [push]
+on: [push, pull_request]
 jobs:
   do-build:
     runs-on: ubuntu-latest
