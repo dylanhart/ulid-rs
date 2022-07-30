@@ -62,7 +62,7 @@ fn generate(count: u32, monotonic: bool) {
 
 fn inspect(values: &[String]) {
     for val in values {
-        let ulid = Ulid::from_string(&val);
+        let ulid = Ulid::from_string(val);
         match ulid {
             Ok(ulid) => {
                 let upper_hex = format!("{:X}", ulid.0);
@@ -81,7 +81,7 @@ COMPONENTS:
 ",
                     ulid.to_string(),
                     upper_hex,
-                    ulid.datetime(),
+                    time::OffsetDateTime::from(ulid.datetime()),
                     ulid.timestamp_ms(),
                     upper_hex.chars().skip(6).collect::<String>()
                 );

@@ -37,11 +37,11 @@ struct ReadMeDoctest;
 
 mod base32;
 #[cfg(feature = "std")]
-mod time;
-#[cfg(feature = "std")]
 mod generator;
 #[cfg(feature = "serde")]
 pub mod serde;
+#[cfg(feature = "std")]
+mod time;
 #[cfg(feature = "uuid")]
 mod uuid;
 
@@ -145,13 +145,13 @@ impl Ulid {
     /// # Example
     /// ```rust
     /// # #[cfg(feature = "std")] {
-    /// use ::time::OffsetDateTime;
+    /// use std::time::{SystemTime, Duration};
     /// use ulid::Ulid;
     ///
-    /// let dt = OffsetDateTime::now_utc();
+    /// let dt = SystemTime::now();
     /// let ulid = Ulid::from_datetime(dt);
     ///
-    /// assert_eq!(ulid.timestamp_ms(), (dt.unix_timestamp_nanos() / 1_000_000) as u64);
+    /// assert_eq!(u128::from(ulid.timestamp_ms()), dt.duration_since(SystemTime::UNIX_EPOCH).unwrap_or(Duration::ZERO).as_millis());
     /// # }
     /// ```
     pub const fn timestamp_ms(&self) -> u64 {
