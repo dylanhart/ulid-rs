@@ -15,7 +15,6 @@ repository = "https://github.com/dylanhart/ulid-rs"
 [features]
 default = ["std"]
 std = ["rand"]
-time = []
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"], optional = true }
