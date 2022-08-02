@@ -1,6 +1,6 @@
 [package]
 name = "ulid"
-version = "0.6.0"
+version = "1.0.0"
 authors = ["dylanhart <dylan96hart@gmail.com>"]
 edition = "2018"
 
@@ -19,7 +19,6 @@ std = ["rand"]
 [dependencies]
 serde = { version = "1.0", features = ["derive"], optional = true }
 rand = { version = "0.8", optional = true }
-# -- Sync versions with the WASM target below --
 uuid = { version = "1.1", optional = true }
 
 [dev-dependencies]
