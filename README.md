@@ -39,13 +39,13 @@ assert_eq!(ulid, res.unwrap());
 
 ## Benchmark
 
-Benchmarks were run on my desktop (Win 10/WSL2 Ubuntu; Ryzen 7 5800x). Run them yourself with `cargo bench`.
+Benchmarks were run on my desktop (Win 10/WSL2 Ubuntu; Ryzen 7 5950x). Run them yourself with `cargo bench`.
 
 ```text
-test bench_from_string        ... bench:          13 ns/iter (+/- 1)
-test bench_from_time          ... bench:           8 ns/iter (+/- 0)
-test bench_generator_generate ... bench:          42 ns/iter (+/- 0)
-test bench_new                ... bench:          44 ns/iter (+/- 1)
+test bench_from_string        ... bench:          13 ns/iter (+/- 0)
+test bench_from_time          ... bench:          13 ns/iter (+/- 0)
+test bench_generator_generate ... bench:          29 ns/iter (+/- 0)
+test bench_new                ... bench:          31 ns/iter (+/- 1)
 test bench_to_str             ... bench:           7 ns/iter (+/- 0)
-test bench_to_string          ... bench:          20 ns/iter (+/- 0)
+test bench_to_string          ... bench:          19 ns/iter (+/- 0)
 ```
