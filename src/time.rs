@@ -1,5 +1,10 @@
 use crate::{bitmask, Ulid};
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
+
+#[cfg(not(target = "wasm32-unknown-unknown"))]
+use std::time::SystemTime;
+#[cfg(target = "wasm32-unknown-unknown")]
+use wasm_timer::SystemTime;
 
 impl Ulid {
     /// Creates a new Ulid with the current time (UTC)
@@ -11,7 +16,7 @@ impl Ulid {
     /// let my_ulid = Ulid::new();
     /// ```
     pub fn new() -> Ulid {
-        Ulid::from_datetime(SystemTime::now())
+        Self::from_datetime(SystemTime::now())
     }
 
     /// Creates a new Ulid using data from the given random number generator

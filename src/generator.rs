@@ -1,4 +1,9 @@
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
+
+#[cfg(not(target = "wasm32-unknown-unknown"))]
+use std::time::SystemTime;
+#[cfg(target = "wasm32-unknown-unknown")]
+use wasm_timer::SystemTime;
 
 use std::fmt;
 
