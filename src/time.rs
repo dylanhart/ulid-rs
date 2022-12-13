@@ -1,9 +1,9 @@
 use crate::{bitmask, Ulid};
 use std::time::Duration;
 
-#[cfg(not(target = "wasm32-unknown-unknown"))]
+#[cfg(not(feature = "wasm"))]
 use std::time::SystemTime;
-#[cfg(target = "wasm32-unknown-unknown")]
+#[cfg(feature = "wasm")]
 use wasm_timer::SystemTime;
 
 impl Ulid {
