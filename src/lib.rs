@@ -239,6 +239,39 @@ impl Ulid {
             Some(Ulid(self.0 + 1))
         }
     }
+
+    /// Creates a Ulid using the provided bytes array.
+    ///
+    /// # Example
+    /// ```
+    /// use ulid::Ulid;
+    /// let bytes = [0xFF; 16];
+    ///
+    /// let ulid = Ulid::from_bytes(bytes);
+    ///
+    /// assert_eq!(
+    ///     ulid.to_string(),
+    ///     "7ZZZZZZZZZZZZZZZZZZZZZZZZZ"
+    /// );
+    /// ```
+    pub const fn from_bytes(bytes: [u8; 16]) -> Ulid {
+        Self(u128::from_be_bytes(bytes))
+    }
+
+    /// Returns the bytes of the Ulid in big-endian order.
+    ///
+    /// # Example
+    /// ```
+    /// use ulid::Ulid;
+    ///
+    /// let text = "7ZZZZZZZZZZZZZZZZZZZZZZZZZ";
+    /// let ulid = Ulid::from_string(text).unwrap();
+    ///
+    /// assert_eq!(ulid.to_bytes(), [0xFF; 16]);
+    /// ```
+    pub const fn to_bytes(&self) -> [u8; 16] {
+        self.0.to_be_bytes()
+    }
 }
 
 impl Default for Ulid {
@@ -275,6 +308,18 @@ impl From<u128> for Ulid {
 impl From<Ulid> for u128 {
     fn from(ulid: Ulid) -> u128 {
         ulid.0
+    }
+}
+
+impl From<[u8; 16]> for Ulid {
+    fn from(bytes: [u8; 16]) -> Self {
+        Self(u128::from_be_bytes(bytes))
+    }
+}
+
+impl From<Ulid> for [u8; 16] {
+    fn from(ulid: Ulid) -> Self {
+        ulid.0.to_be_bytes()
     }
 }
 
@@ -331,10 +376,12 @@ mod tests {
         let s: String = ulid.into();
         let u: u128 = ulid.into();
         let uu: (u64, u64) = ulid.into();
+        let bytes: [u8; 16] = ulid.into();
 
         assert_eq!(Ulid::from_str(&s).unwrap(), ulid);
         assert_eq!(Ulid::from(u), ulid);
         assert_eq!(Ulid::from(uu), ulid);
+        assert_eq!(Ulid::from(bytes), ulid);
     }
 
     #[test]
