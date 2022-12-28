@@ -89,7 +89,7 @@ impl Generator {
     /// ```
     pub fn generate_with_source<R>(&mut self, source: &mut R) -> Result<Ulid, MonotonicError>
     where
-        R: rand::Rng,
+        R: rand::Rng + ?Sized,
     {
         let now = SystemTime::now();
         self.generate_from_datetime_with_source(now, source)
@@ -121,7 +121,7 @@ impl Generator {
         source: &mut R,
     ) -> Result<Ulid, MonotonicError>
     where
-        R: rand::Rng,
+        R: rand::Rng + ?Sized,
     {
         let last_ms = self.previous.timestamp_ms();
         // maybe time went backward, or it is the same ms.
