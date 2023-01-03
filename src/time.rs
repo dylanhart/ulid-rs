@@ -62,7 +62,7 @@ impl Ulid {
     /// ```
     pub fn from_datetime_with_source<R>(datetime: SystemTime, source: &mut R) -> Ulid
     where
-        R: rand::Rng,
+        R: rand::Rng + ?Sized,
     {
         let timestamp = datetime
             .duration_since(SystemTime::UNIX_EPOCH)
