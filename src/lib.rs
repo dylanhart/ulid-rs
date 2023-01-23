@@ -30,6 +30,7 @@
 //!
 //! ```
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 #[doc = include_str!("../README.md")]
 #[cfg(all(doctest, feature = "std"))]
@@ -39,6 +40,7 @@ mod base32;
 #[cfg(feature = "std")]
 mod generator;
 #[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub mod serde;
 #[cfg(feature = "std")]
 mod time;
@@ -206,6 +208,7 @@ impl Ulid {
     /// ```
     #[allow(clippy::inherent_to_string_shadow_display)] // Significantly faster than Display::to_string
     #[cfg(feature = "std")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
     pub fn to_string(&self) -> String {
         base32::encode(self.0)
     }
@@ -281,6 +284,7 @@ impl Default for Ulid {
 }
 
 #[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl From<Ulid> for String {
     fn from(ulid: Ulid) -> String {
         ulid.to_string()

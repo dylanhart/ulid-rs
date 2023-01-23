@@ -45,6 +45,7 @@ pub enum EncodeError {
 }
 
 #[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl std::error::Error for EncodeError {}
 
 impl fmt::Display for EncodeError {
@@ -73,6 +74,7 @@ pub fn encode_to(mut value: u128, buffer: &mut [u8]) -> Result<usize, EncodeErro
 }
 
 #[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub fn encode(value: u128) -> String {
     let mut buffer: [u8; ULID_LEN] = [0; ULID_LEN];
 
@@ -91,6 +93,7 @@ pub enum DecodeError {
 }
 
 #[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl std::error::Error for DecodeError {}
 
 impl fmt::Display for DecodeError {

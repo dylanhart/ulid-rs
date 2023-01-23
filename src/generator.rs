@@ -5,6 +5,7 @@ use std::fmt;
 use crate::Ulid;
 
 /// A Ulid generator that provides monotonically increasing Ulids
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub struct Generator {
     previous: Ulid,
 }
@@ -152,6 +153,7 @@ impl Default for Generator {
 }
 
 /// Error while trying to generate a monotonic increment in the same millisecond
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 #[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
 pub enum MonotonicError {
     /// Would overflow into the next millisecond
