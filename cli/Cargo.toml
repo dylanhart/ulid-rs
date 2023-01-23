@@ -2,6 +2,7 @@
 name = "ulid-cli"
 version = "0.3.1"
 authors = ["dylanhart <dylan96hart@gmail.com>", "Kan-Ru Chen <kanru@kanru.info>"]
+rust-version = "1.60"
 
 license = "MIT"
 readme = "../README.md"
@@ -11,7 +12,7 @@ keywords = ["ulid", "uuid", "sortable", "identifier"]
 
 repository = "https://github.com/dylanhart/ulid-rs"
 
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 structopt = "0.2"

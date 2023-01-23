@@ -1,6 +1,9 @@
 use crate::{bitmask, Ulid};
 use std::time::{Duration, SystemTime};
 
+/// The standard library can be used to get the current time.
+/// The `std` feature (which is enabled by default) will expose some extra functions to make life easier.
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl Ulid {
     /// Creates a new Ulid with the current time (UTC)
     ///
@@ -10,6 +13,7 @@ impl Ulid {
     ///
     /// let my_ulid = Ulid::new();
     /// ```
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
     pub fn new() -> Ulid {
         Ulid::from_datetime(SystemTime::now())
     }
@@ -24,6 +28,7 @@ impl Ulid {
     /// let mut rng = StdRng::from_entropy();
     /// let ulid = Ulid::with_source(&mut rng);
     /// ```
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
     pub fn with_source<R: rand::Rng>(source: &mut R) -> Ulid {
         Ulid::from_datetime_with_source(SystemTime::now(), source)
     }
@@ -42,6 +47,7 @@ impl Ulid {
     ///
     /// let ulid = Ulid::from_datetime(SystemTime::now());
     /// ```
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
     pub fn from_datetime(datetime: SystemTime) -> Ulid {
         Ulid::from_datetime_with_source(datetime, &mut rand::thread_rng())
     }
@@ -60,6 +66,7 @@ impl Ulid {
     /// let mut rng = StdRng::from_entropy();
     /// let ulid = Ulid::from_datetime_with_source(SystemTime::now(), &mut rng);
     /// ```
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
     pub fn from_datetime_with_source<R>(datetime: SystemTime, source: &mut R) -> Ulid
     where
         R: rand::Rng + ?Sized,
@@ -90,6 +97,7 @@ impl Ulid {
     ///     && dt - Duration::from_millis(1) <= ulid.datetime()
     /// );
     /// ```
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
     pub fn datetime(&self) -> SystemTime {
         let stamp = self.timestamp_ms();
         SystemTime::UNIX_EPOCH + Duration::from_millis(stamp)

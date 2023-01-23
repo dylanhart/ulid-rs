@@ -20,13 +20,63 @@ impl Serialize for Ulid {
     }
 }
 
+struct UlidVisitor(&'static str);
+impl<'de> serde::de::Visitor<'de> for UlidVisitor {
+    type Value = Ulid;
+
+    fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+        formatter.write_str(self.0)
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        #[cfg(feature = "uuid")]
+        if matches!(value.len(), 32 | 36 | 38 | 45) {
+            return match uuid::Uuid::try_parse(value) {
+                Ok(a) => Ok(Ulid::from(a)),
+                Err(e) => Err(serde::de::Error::custom(e)),
+            };
+        }
+        Ulid::from_string(value).map_err(serde::de::Error::custom)
+    }
+
+    fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        // allow either the 16 bytes as is, or a wrongly typed str
+        match v.len() {
+            16 => {
+                let ptr = v.as_ptr() as *const [u8; 16];
+                Ok(Ulid::from_bytes(*unsafe { &*ptr }))
+            }
+            crate::ULID_LEN => Ulid::from_string(unsafe { core::str::from_utf8_unchecked(v) })
+                .map_err(serde::de::Error::custom),
+            #[cfg(feature = "uuid")]
+            32 | 36 | 38 | 45 => match uuid::Uuid::try_parse_ascii(v) {
+                Ok(a) => Ok(Ulid::from(a)),
+                Err(e) => Err(serde::de::Error::custom(e)),
+            },
+            len => Err(E::invalid_length(len, &self.0)),
+        }
+    }
+
+    fn visit_u128<E>(self, v: u128) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Ulid(v))
+    }
+}
+
 impl<'de> Deserialize<'de> for Ulid {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let deserialized_str = String::deserialize(deserializer)?;
-        Self::from_string(&deserialized_str).map_err(serde::de::Error::custom)
+        deserializer.deserialize_str(UlidVisitor("an ulid string or value"))
     }
 }
 
@@ -50,7 +100,7 @@ impl<'de> Deserialize<'de> for Ulid {
 /// ```
 pub mod ulid_as_u128 {
     use crate::Ulid;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+    use serde::{Deserializer, Serialize, Serializer};
 
     /// Serializes a ULID as a u128 type.
     pub fn serialize<S>(value: &Ulid, serializer: S) -> Result<S::Ok, S::Error>
@@ -65,8 +115,7 @@ pub mod ulid_as_u128 {
     where
         D: Deserializer<'de>,
     {
-        let deserialized_u128 = u128::deserialize(deserializer)?;
-        Ok(Ulid(deserialized_u128))
+        deserializer.deserialize_u128(super::UlidVisitor("an ulid value as u128"))
     }
 }
 
@@ -89,9 +138,10 @@ pub mod ulid_as_u128 {
 /// }
 /// ```
 #[cfg(all(feature = "uuid", feature = "serde"))]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "uuid", feature = "serde"))))]
 pub mod ulid_as_uuid {
     use crate::Ulid;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+    use serde::{Deserializer, Serializer};
     use uuid::Uuid;
 
     /// Converts the ULID to a UUID and serializes it as a string.
@@ -100,7 +150,9 @@ pub mod ulid_as_uuid {
         S: Serializer,
     {
         let uuid: Uuid = (*value).into();
-        uuid.to_string().serialize(serializer)
+        let mut buffer = uuid::Uuid::encode_buffer();
+        let form = uuid.as_hyphenated().encode_lower(&mut buffer);
+        serializer.serialize_str(form)
     }
 
     /// Deserializes a ULID from a string containing a UUID.
@@ -108,8 +160,6 @@ pub mod ulid_as_uuid {
     where
         D: Deserializer<'de>,
     {
-        let de_string = String::deserialize(deserializer)?;
-        let de_uuid = Uuid::parse_str(&de_string).map_err(serde::de::Error::custom)?;
-        Ok(Ulid::from(de_uuid))
+        deserializer.deserialize_str(super::UlidVisitor("an uuid string"))
     }
 }
