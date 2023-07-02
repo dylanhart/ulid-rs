@@ -15,7 +15,7 @@ repository = "https://github.com/dylanhart/ulid-rs"
 [features]
 default = ["std"]
 std = ["rand"]
-wasm = ["getrandom", "wasm-timer"]
+js = ["getrandom", "wasm-timer"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"], optional = true }
