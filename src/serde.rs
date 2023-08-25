@@ -41,7 +41,7 @@ impl<'de> Deserialize<'de> for Ulid {
 /// ```
 /// # use ulid::Ulid;
 /// # use ulid::serde::ulid_as_u128;
-/// # use serde::{Serialize, Deserialize};
+/// # use serde_derive::{Serialize, Deserialize};
 /// #[derive(Serialize, Deserialize)]
 /// struct U128Example {
 ///     #[serde(with = "ulid_as_u128")]
@@ -81,7 +81,7 @@ pub mod ulid_as_u128 {
 /// ```
 /// # use ulid::Ulid;
 /// # use ulid::serde::ulid_as_uuid;
-/// # use serde::{Serialize, Deserialize};
+/// # use serde_derive::{Serialize, Deserialize};
 /// #[derive(Serialize, Deserialize)]
 /// struct UuidExample {
 ///     #[serde(with = "ulid_as_uuid")]
