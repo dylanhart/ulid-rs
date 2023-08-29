@@ -38,6 +38,8 @@ struct ReadMeDoctest;
 mod base32;
 #[cfg(feature = "std")]
 mod generator;
+#[cfg(feature = "postgres")]
+mod postgres;
 #[cfg(feature = "serde")]
 pub mod serde;
 #[cfg(feature = "std")]
