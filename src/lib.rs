@@ -190,7 +190,9 @@ impl Ulid {
     ///
     /// assert_eq!(new_text, text);
     /// ```
+    #[deprecated(since = "1.2.0", note = "Use the infallible `array_to_str` instead.")]
     pub fn to_str<'buf>(&self, buf: &'buf mut [u8]) -> Result<&'buf mut str, EncodeError> {
+        #[allow(deprecated)]
         let len = base32::encode_to(self.0, buf)?;
         Ok(unsafe { core::str::from_utf8_unchecked_mut(&mut buf[..len]) })
     }

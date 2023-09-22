@@ -57,6 +57,10 @@ impl fmt::Display for EncodeError {
 }
 
 /// Encode a u128 value to a given buffer. The provided buffer should be at least `ULID_LEN` long.
+#[deprecated(
+    since = "1.2.0",
+    note = "Use the infallible `encode_to_array` instead."
+)]
 pub fn encode_to(mut value: u128, buffer: &mut [u8]) -> Result<usize, EncodeError> {
     // NOTE: This function can't be made const because mut refs aren't allowed for some reason
 
