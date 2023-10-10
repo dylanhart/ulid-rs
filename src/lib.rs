@@ -190,9 +190,30 @@ impl Ulid {
     ///
     /// assert_eq!(new_text, text);
     /// ```
+    #[deprecated(since = "1.2.0", note = "Use the infallible `array_to_str` instead.")]
     pub fn to_str<'buf>(&self, buf: &'buf mut [u8]) -> Result<&'buf mut str, EncodeError> {
+        #[allow(deprecated)]
         let len = base32::encode_to(self.0, buf)?;
         Ok(unsafe { core::str::from_utf8_unchecked_mut(&mut buf[..len]) })
+    }
+
+    /// Creates a Crockford Base32 encoded string that represents this Ulid
+    ///
+    /// # Example
+    /// ```rust
+    /// use ulid::Ulid;
+    ///
+    /// let text = "01D39ZY06FGSCTVN4T2V9PKHFZ";
+    /// let ulid = Ulid::from_string(text).unwrap();
+    ///
+    /// let mut buf = [0; ulid::ULID_LEN];
+    /// let new_text = ulid.array_to_str(&mut buf);
+    ///
+    /// assert_eq!(new_text, text);
+    /// ```
+    pub fn array_to_str<'buf>(&self, buf: &'buf mut [u8; ULID_LEN]) -> &'buf mut str {
+        base32::encode_to_array(self.0, buf);
+        unsafe { core::str::from_utf8_unchecked_mut(buf) }
     }
 
     /// Creates a Crockford Base32 encoded string that represents this Ulid
@@ -336,7 +357,7 @@ impl FromStr for Ulid {
 impl fmt::Display for Ulid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         let mut buffer = [0; ULID_LEN];
-        write!(f, "{}", self.to_str(&mut buffer).unwrap())
+        write!(f, "{}", self.array_to_str(&mut buffer))
     }
 }
 

@@ -15,7 +15,7 @@ impl Serialize for Ulid {
         S: Serializer,
     {
         let mut buffer = [0; ULID_LEN];
-        let text = self.to_str(&mut buffer).unwrap();
+        let text = self.array_to_str(&mut buffer);
         text.serialize(serializer)
     }
 }

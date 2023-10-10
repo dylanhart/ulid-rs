@@ -20,7 +20,7 @@ fn bench_to_str(b: &mut Bencher) {
     let ulid = Ulid::new();
     b.iter(|| {
         let mut buffer = [0; ULID_LEN];
-        ulid.to_str(&mut buffer).unwrap();
+        ulid.array_to_str(&mut buffer);
     });
 }
 

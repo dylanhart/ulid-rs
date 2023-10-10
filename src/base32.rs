@@ -57,6 +57,10 @@ impl fmt::Display for EncodeError {
 }
 
 /// Encode a u128 value to a given buffer. The provided buffer should be at least `ULID_LEN` long.
+#[deprecated(
+    since = "1.2.0",
+    note = "Use the infallible `encode_to_array` instead."
+)]
 pub fn encode_to(mut value: u128, buffer: &mut [u8]) -> Result<usize, EncodeError> {
     // NOTE: This function can't be made const because mut refs aren't allowed for some reason
 
@@ -72,11 +76,21 @@ pub fn encode_to(mut value: u128, buffer: &mut [u8]) -> Result<usize, EncodeErro
     Ok(ULID_LEN)
 }
 
+/// Encode a u128 value to a given buffer.
+pub fn encode_to_array(mut value: u128, buffer: &mut [u8; ULID_LEN]) {
+    // NOTE: This function can't be made const because mut refs aren't allowed for some reason
+
+    for i in 0..ULID_LEN {
+        buffer[ULID_LEN - 1 - i] = ALPHABET[(value & 0x1f) as usize];
+        value >>= 5;
+    }
+}
+
 #[cfg(feature = "std")]
 pub fn encode(value: u128) -> String {
     let mut buffer: [u8; ULID_LEN] = [0; ULID_LEN];
 
-    encode_to(value, &mut buffer).expect("unexpected encoding error");
+    encode_to_array(value, &mut buffer);
 
     String::from_utf8(buffer.to_vec()).expect("unexpected failure in base32 encode for ulid")
 }
