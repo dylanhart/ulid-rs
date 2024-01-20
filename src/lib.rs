@@ -102,7 +102,7 @@ impl Ulid {
 
     /// Creates a Ulid from a Crockford Base32 encoded string
     ///
-    /// An DecodeError will be returned when the given string is not formated
+    /// An DecodeError will be returned when the given string is not formatted
     /// properly.
     ///
     /// # Example
