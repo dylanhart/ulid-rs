@@ -11,7 +11,7 @@ impl Ulid {
     /// let my_ulid = Ulid::new();
     /// ```
     pub fn new() -> Ulid {
-        Ulid::from_datetime(SystemTime::now())
+        Ulid::from_datetime(crate::time_utils::now())
     }
 
     /// Creates a new Ulid using data from the given random number generator
@@ -25,7 +25,7 @@ impl Ulid {
     /// let ulid = Ulid::with_source(&mut rng);
     /// ```
     pub fn with_source<R: rand::Rng>(source: &mut R) -> Ulid {
-        Ulid::from_datetime_with_source(SystemTime::now(), source)
+        Ulid::from_datetime_with_source(crate::time_utils::now(), source)
     }
 
     /// Creates a new Ulid with the given datetime

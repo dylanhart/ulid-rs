@@ -42,8 +42,7 @@ impl Generator {
     /// assert!(ulid1 < ulid2);
     /// ```
     pub fn generate(&mut self) -> Result<Ulid, MonotonicError> {
-        let now = SystemTime::now();
-        self.generate_from_datetime(now)
+        self.generate_from_datetime(crate::time_utils::now())
     }
 
     /// Generate a new Ulid matching the given DateTime.
@@ -91,8 +90,7 @@ impl Generator {
     where
         R: rand::Rng + ?Sized,
     {
-        let now = SystemTime::now();
-        self.generate_from_datetime_with_source(now, source)
+        self.generate_from_datetime_with_source(crate::time_utils::now(), source)
     }
 
     /// Generate a new monotonic increasing Ulid with the given source matching the given DateTime

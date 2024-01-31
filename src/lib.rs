@@ -44,6 +44,8 @@ mod postgres;
 pub mod serde;
 #[cfg(feature = "std")]
 mod time;
+#[cfg(feature = "std")]
+mod time_utils;
 #[cfg(feature = "uuid")]
 mod uuid;
 
