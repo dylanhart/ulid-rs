@@ -32,6 +32,9 @@ web-time = "1"
 bencher = "0.1"
 serde_derive = "1.0"
 
+[target.wasm32-unknown-unknown.dev-dependencies]
+wasm-bindgen-test = "0.3"
+
 [[bench]]
 name = "bench"
 path = "benches/bench.rs"
