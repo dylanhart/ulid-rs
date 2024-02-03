@@ -168,11 +168,14 @@ mod tests {
 
     #[test]
     fn truncates_at_unix_epoch() {
-        let before_epoch = SystemTime::UNIX_EPOCH - Duration::from_secs(100);
-        assert!(before_epoch < SystemTime::UNIX_EPOCH);
-        assert_eq!(
-            Ulid::from_datetime(before_epoch).datetime(),
-            SystemTime::UNIX_EPOCH
-        );
+        if let Some(before_epoch) = SystemTime::UNIX_EPOCH.checked_sub(Duration::from_secs(100)) {
+            assert!(before_epoch < SystemTime::UNIX_EPOCH);
+            assert_eq!(
+                Ulid::from_datetime(before_epoch).datetime(),
+                SystemTime::UNIX_EPOCH
+            );
+        } else {
+            // Prior dates are not representable (e.g. wasm32-wasi)
+        }
     }
 }
