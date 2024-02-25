@@ -277,16 +277,16 @@ impl Ulid {
     /// ```rust
     /// use ulid::Ulid;
     ///
-    /// let ulid_0 = Ulid::from_parts(0, (1 << Ulid::TIME_BITS) - 1);
+    /// let ulid_0 = Ulid::from_parts(0, (1 << Ulid::RAND_BITS) - 1);
     /// assert_eq!(
     ///     ulid_0.to_string(),
-    ///     "00000000000000007ZZZZZZZZZ"
+    ///     "0000000000ZZZZZZZZZZZZZZZZ"
     /// );
     ///
     /// let ulid_1 = ulid_0.increment_overflowing();
     /// assert_eq!(
     ///     ulid_1.to_string(),
-    ///     "00000000000000008000000000"
+    ///     "00000000010000000000000000"
     /// );
     /// ```
     pub const fn increment_overflowing(&self) -> Ulid {
@@ -451,5 +451,12 @@ mod tests {
         println!("{}", EncodeError::BufferTooSmall);
         println!("{}", DecodeError::InvalidLength);
         println!("{}", DecodeError::InvalidChar);
+    }
+
+    #[test]
+    #[should_panic = "ULID overflow"]
+    fn increment_overflowing_panics_on_last_ulid() {
+        let last_ulid = Ulid::from_bytes([0xFF; 16]);
+        last_ulid.increment_overflowing();
     }
 }
