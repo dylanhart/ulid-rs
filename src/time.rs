@@ -4,6 +4,8 @@ use std::time::{Duration, SystemTime};
 impl Ulid {
     /// Creates a new Ulid with the current time (UTC)
     ///
+    /// Using this function to generate Ulids will not guarantee monotonic sort order.
+    /// See [ulid::Generator] for a monotonic sort order.
     /// # Example
     /// ```rust
     /// use ulid::Ulid;
