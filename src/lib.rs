@@ -73,6 +73,7 @@ pub(crate) use bitmask;
 /// Of the 128-bits, the first 48 are a unix timestamp in milliseconds. The
 /// remaining 80 are random. The first 48 provide for lexicographic sorting and
 /// the remaining 80 ensure that the identifier is unique.
+#[cfg_attr(feature = "bitcode", derive(bitcode::Encode, bitcode::Decode))]
 #[derive(Debug, PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct Ulid(pub u128);
 
@@ -420,5 +421,20 @@ mod tests {
         println!("{}", EncodeError::BufferTooSmall);
         println!("{}", DecodeError::InvalidLength);
         println!("{}", DecodeError::InvalidChar);
+    }
+}
+
+#[cfg(all(test, feature = "std", feature = "bitcode"))]
+mod bitcode_tests {
+    use super::*;
+    use bitcode;
+
+    #[test]
+    fn bitcode_roundtrip() {
+        let ulid = Ulid::new();
+        let encoded: Vec<u8> = bitcode::encode(&ulid).expect("failed to encode");
+        let decoded: Ulid = bitcode::decode(&encoded).expect("failed to decode");
+
+        assert_eq!(ulid, decoded);
     }
 }
