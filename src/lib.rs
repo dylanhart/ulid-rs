@@ -49,6 +49,7 @@ mod time_utils;
 #[cfg(feature = "uuid")]
 mod uuid;
 
+use core::convert::TryFrom;
 use core::fmt;
 use core::str::FromStr;
 
@@ -353,6 +354,22 @@ impl FromStr for Ulid {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ulid::from_string(s)
+    }
+}
+
+impl TryFrom<&'_ str> for Ulid {
+    type Error = DecodeError;
+
+    fn try_from(value: &'_ str) -> Result<Self, Self::Error> {
+        Ulid::from_string(value)
+    }
+}
+
+impl TryFrom<String> for Ulid {
+    type Error = DecodeError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Ulid::from_string(&value)
     }
 }
 
