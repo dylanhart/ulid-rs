@@ -365,14 +365,6 @@ impl TryFrom<&'_ str> for Ulid {
     }
 }
 
-impl TryFrom<String> for Ulid {
-    type Error = DecodeError;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Ulid::from_string(&value)
-    }
-}
-
 impl fmt::Display for Ulid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         let mut buffer = [0; ULID_LEN];
