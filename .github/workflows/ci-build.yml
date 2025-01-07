@@ -19,9 +19,6 @@ jobs:
       - run: cargo test --no-default-features
 
       - name: Install wasm-pack
-        shell: bash
-        run: |
-          cargo install wasm-pack
-          ls -l ~/.cargo/bin/
+        run: cargo install wasm-pack
 
       - run: ~/.cargo/bin/wasm-pack test --node
