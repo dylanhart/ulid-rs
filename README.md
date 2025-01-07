@@ -31,6 +31,7 @@ assert_eq!(ulid, res.unwrap());
 * **`std` (default)**: Flag to toggle use of `std` and `rand`. Disable this flag for `#[no_std]` support.
 * **`serde`**: Enables serialization and deserialization of `Ulid` types via `serde`. ULIDs are serialized using their canonical 26-character representation as defined in the ULID standard. An optional `ulid_as_u128` module is provided, which enables serialization through an `Ulid`'s inner `u128` primitive type. See the [documentation][serde_mod] and [serde docs][serde_docs] for more information.
 * **`uuid`**: Implements infallible conversions between ULIDs and UUIDs from the [`uuid`][uuid] crate via the [`std::convert::From`][trait_from] trait.
+* **`js`**: Flag that turns on the `getrandom/js` feature, which is only used for wasm32 targets.
 
 [serde_mod]: https://docs.rs/ulid/latest/ulid/serde/index.html
 [serde_docs]: https://serde.rs/field-attrs.html#with
