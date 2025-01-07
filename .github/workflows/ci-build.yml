@@ -34,4 +34,4 @@ jobs:
             https://github.com/rustwasm/wasm-pack/releases/download/v${WASM_PACK_VERSION}/${file_name}.tar.gz \
             | tar --strip-components=1 -xzvf- "${file_name}/wasm-pack"
 
-      - run: wasm-pack test --node
+      - run: wasm-pack test --node --features getrandom/js
