@@ -45,6 +45,35 @@ impl Generator {
         self.generate_from_datetime(crate::time_utils::now())
     }
 
+    /// Generate a new Ulid. Each call is guaranteed to provide a Ulid with a larger value than the
+    /// last call. The time part of the returned [`Ulid`] can be up to one millisecond in the future,
+    /// under reasonable assumptions about processor speeds.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if the previously returned value was already the highest possible ulid.
+    /// This should not happen before year 91000 of the gregorian calendar at least.
+    ///
+    /// ```rust
+    /// use ulid::Generator;
+    /// let mut gen = Generator::new();
+    ///
+    /// let ulid1 = gen.generate_overflowing();
+    /// let ulid2 = gen.generate_overflowing();
+    ///
+    /// assert!(ulid1 < ulid2);
+    /// ```
+    pub fn generate_overflowing(&mut self) -> Ulid {
+        let next = Ulid::new();
+        if next > self.previous {
+            self.previous = next;
+            next
+        } else {
+            self.previous = self.previous.increment_overflowing();
+            self.previous
+        }
+    }
+
     /// Generate a new Ulid matching the given DateTime.
     /// Each call is guaranteed to provide a Ulid with a larger value than the last call.
     /// If the random bits would overflow, this method will return an error.
