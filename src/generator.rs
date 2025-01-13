@@ -23,7 +23,7 @@ impl Generator {
     ///
     /// assert!(ulid1 < ulid2);
     /// ```
-    pub fn new() -> Generator {
+    pub const fn new() -> Generator {
         Generator {
             previous: Ulid::nil(),
         }
