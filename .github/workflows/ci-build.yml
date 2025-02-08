@@ -22,3 +22,5 @@ jobs:
         run: cargo install wasm-pack
 
       - run: ~/.cargo/bin/wasm-pack test --node
+        env:
+          RUSTFLAGS: '--cfg getrandom_backend="wasm_js"'

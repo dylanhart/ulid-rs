@@ -23,7 +23,7 @@ impl Ulid {
     /// use rand::prelude::*;
     /// use ulid::Ulid;
     ///
-    /// let mut rng = StdRng::from_entropy();
+    /// let mut rng = StdRng::from_os_rng();
     /// let ulid = Ulid::with_source(&mut rng);
     /// ```
     pub fn with_source<R: rand::Rng>(source: &mut R) -> Ulid {
@@ -45,7 +45,7 @@ impl Ulid {
     /// let ulid = Ulid::from_datetime(SystemTime::now());
     /// ```
     pub fn from_datetime(datetime: SystemTime) -> Ulid {
-        Ulid::from_datetime_with_source(datetime, &mut rand::thread_rng())
+        Ulid::from_datetime_with_source(datetime, &mut rand::rng())
     }
 
     /// Creates a new Ulid with the given datetime and random number generator
@@ -59,7 +59,7 @@ impl Ulid {
     /// use rand::prelude::*;
     /// use ulid::Ulid;
     ///
-    /// let mut rng = StdRng::from_entropy();
+    /// let mut rng = StdRng::from_os_rng();
     /// let ulid = Ulid::from_datetime_with_source(SystemTime::now(), &mut rng);
     /// ```
     pub fn from_datetime_with_source<R>(datetime: SystemTime, source: &mut R) -> Ulid
@@ -72,8 +72,8 @@ impl Ulid {
             .as_millis();
         let timebits = (timestamp & bitmask!(Self::TIME_BITS)) as u64;
 
-        let msb = timebits << 16 | u64::from(source.gen::<u16>());
-        let lsb = source.gen::<u64>();
+        let msb = timebits << 16 | u64::from(source.random::<u16>());
+        let lsb = source.random::<u64>();
         Ulid::from((msb, lsb))
     }
 

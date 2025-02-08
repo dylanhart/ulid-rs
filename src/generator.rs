@@ -64,7 +64,7 @@ impl Generator {
     /// assert!(ulid1 < ulid2);
     /// ```
     pub fn generate_from_datetime(&mut self, datetime: SystemTime) -> Result<Ulid, MonotonicError> {
-        self.generate_from_datetime_with_source(datetime, &mut rand::thread_rng())
+        self.generate_from_datetime_with_source(datetime, &mut rand::rng())
     }
 
     /// Generate a new monotonic increasing Ulid with the given source
@@ -78,7 +78,7 @@ impl Generator {
     /// use std::time::SystemTime;
     /// use rand::prelude::*;
     ///
-    /// let mut rng = StdRng::from_entropy();
+    /// let mut rng = StdRng::from_os_rng();
     /// let mut gen = Generator::new();
     ///
     /// let ulid1 = gen.generate_with_source(&mut rng).unwrap();
@@ -104,7 +104,7 @@ impl Generator {
     /// use rand::prelude::*;
     ///
     /// let dt = SystemTime::now();
-    /// let mut rng = StdRng::from_entropy();
+    /// let mut rng = StdRng::from_os_rng();
     /// let mut gen = Generator::new();
     ///
     /// let ulid1 = gen.generate_from_datetime_with_source(dt, &mut rng).unwrap();
