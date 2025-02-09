@@ -266,6 +266,37 @@ impl Ulid {
         }
     }
 
+    /// Increment the random number, increasing the timestamp if the random number overflows
+    ///
+    /// # Panics
+    ///
+    /// This function panics if the previous value was already the highest possible ulid.
+    /// This should not happen before year 91000 of the gregorian calendar at least.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use ulid::Ulid;
+    ///
+    /// let ulid_0 = Ulid::from_parts(0, (1 << Ulid::RAND_BITS) - 1);
+    /// assert_eq!(
+    ///     ulid_0.to_string(),
+    ///     "0000000000ZZZZZZZZZZZZZZZZ"
+    /// );
+    ///
+    /// let ulid_1 = ulid_0.increment_overflowing();
+    /// assert_eq!(
+    ///     ulid_1.to_string(),
+    ///     "00000000010000000000000000"
+    /// );
+    /// ```
+    pub const fn increment_overflowing(&self) -> Ulid {
+        Ulid(match self.0.checked_add(1) {
+            Some(val) => val,
+            None => panic!("ULID overflow"),
+        })
+    }
+
     /// Creates a Ulid using the provided bytes array.
     ///
     /// # Example
@@ -429,5 +460,12 @@ mod tests {
         println!("{}", EncodeError::BufferTooSmall);
         println!("{}", DecodeError::InvalidLength);
         println!("{}", DecodeError::InvalidChar);
+    }
+
+    #[test]
+    #[should_panic = "ULID overflow"]
+    fn increment_overflowing_panics_on_last_ulid() {
+        let last_ulid = Ulid::from_bytes([0xFF; 16]);
+        last_ulid.increment_overflowing();
     }
 }
