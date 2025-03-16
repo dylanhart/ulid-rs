@@ -40,6 +40,8 @@ mod base32;
 mod generator;
 #[cfg(feature = "postgres")]
 mod postgres;
+#[cfg(feature = "rkyv")]
+mod rkyv;
 #[cfg(feature = "serde")]
 pub mod serde;
 #[cfg(feature = "std")]
@@ -75,6 +77,10 @@ pub(crate) use bitmask;
 /// remaining 80 are random. The first 48 provide for lexicographic sorting and
 /// the remaining 80 ensure that the identifier is unique.
 #[derive(Debug, PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Copy)]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(::rkyv::Archive, ::rkyv::Serialize, ::rkyv::Deserialize)
+)]
 pub struct Ulid(pub u128);
 
 impl Ulid {

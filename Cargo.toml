@@ -16,6 +16,7 @@ repository = "https://github.com/dylanhart/ulid-rs"
 default = ["std"]
 std = ["rand"]
 postgres = ["dep:postgres-types", "dep:bytes"]
+rkyv = ["dep:rkyv"]
 
 [dependencies]
 serde = { version = "1.0", optional = true }
@@ -23,6 +24,7 @@ rand = { version = "0.9", optional = true }
 uuid = { version = "1.1", optional = true }
 postgres-types = { version = "0.2.6", optional = true }
 bytes = { version = "1.4.0", optional = true }
+rkyv = { version = "0.8.10", optional = true }
 
 [target.wasm32-unknown-unknown.dependencies]
 web-time = "1"
