@@ -1,6 +1,6 @@
 //! Implemements encoding/decoding for Mulsi
 
-use musli::{
+use musli_core::{
     mode::{Binary, Text},
     Allocator, Context, Decode, Decoder, Encode, Encoder,
 };
@@ -81,5 +81,22 @@ where
     {
         let cx = decoder.cx();
         decoder.decode_unsized(|string: &str| Ulid::from_string(string).map_err(cx.map()))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_roundtrip() {
+        let id = Ulid::new();
+        let id_string = id.to_string();
+
+        let bin = musli::wire::to_vec(&id).unwrap();
+        let deserialized = musli::wire::from_slice(&bin).unwrap();
+
+        assert_eq!(id, deserialized);
+        assert_eq!(id_string, deserialized.to_string());
     }
 }
