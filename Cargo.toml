@@ -34,7 +34,7 @@ web-time = "1"
 [dev-dependencies]
 bencher = "0.1"
 serde_derive = "1.0"
-musli = { version = "0.0.149", features = ["wire"]}
+musli = { version = "0.0.149", features = ["wire", "json"]}
 
 [target.wasm32-unknown-unknown.dev-dependencies]
 getrandom = { version = "0.3.1", features = ["wasm_js"] }

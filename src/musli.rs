@@ -87,6 +87,8 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
+    use musli::json::Encoding;
+    use musli::mode::*;
 
     #[test]
     fn test_roundtrip() {
@@ -98,5 +100,22 @@ mod test {
 
         assert_eq!(id, deserialized);
         assert_eq!(id_string, deserialized.to_string());
+    }
+
+    #[test]
+    fn test_roundtrip_modes() {
+        const TEXT: Encoding<Text> = Encoding::new();
+        const BINARY: Encoding<Binary> = Encoding::new().with_mode();
+
+        let id = Ulid::from_string("01KE1SGJNSGM7AMZNDWQ24B1PT").unwrap();
+
+        let named = TEXT.to_vec(&id).unwrap();
+        assert_eq!(named.as_slice(), br#""01KE1SGJNSGM7AMZNDWQ24B1PT""#);
+
+        let indexed = BINARY.to_vec(&id).unwrap();
+        assert_eq!(
+            indexed.as_slice(),
+            br#"[1,155,131,152,74,185,133,14,170,126,173,229,196,69,134,218]"#
+        );
     }
 }
