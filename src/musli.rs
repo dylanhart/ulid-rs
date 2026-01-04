@@ -1,4 +1,4 @@
-//! Implemements encoding/decoding for Mulsi
+//! Implements encoding/decoding for Musli
 
 use musli_core::{
     mode::{Binary, Text},
@@ -17,7 +17,7 @@ impl Encode<Binary> for Ulid {
     #[inline]
     fn encode<E>(&self, encoder: E) -> Result<(), E::Error>
     where
-        E: Encoder,
+        E: Encoder<Mode = Binary>,
     {
         encoder.encode_array(&self.to_bytes())
     }
@@ -38,7 +38,7 @@ impl Encode<Text> for Ulid {
     #[inline]
     fn encode<E>(&self, encoder: E) -> Result<(), E::Error>
     where
-        E: Encoder,
+        E: Encoder<Mode = Text>,
     {
         encoder.collect_string(self)
     }
@@ -60,7 +60,7 @@ where
     #[inline]
     fn decode<D>(decoder: D) -> Result<Self, D::Error>
     where
-        D: Decoder<'de>,
+        D: Decoder<'de, Mode = Binary>,
     {
         decoder.decode_array::<16>().map(Ulid::from)
     }
@@ -77,7 +77,7 @@ where
     #[inline]
     fn decode<D>(decoder: D) -> Result<Self, D::Error>
     where
-        D: Decoder<'de>,
+        D: Decoder<'de, Mode = Text>,
     {
         let cx = decoder.cx();
         decoder.decode_unsized(|string: &str| Ulid::from_string(string).map_err(cx.map()))
