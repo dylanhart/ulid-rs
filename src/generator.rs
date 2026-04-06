@@ -78,7 +78,7 @@ impl Generator {
     /// use std::time::SystemTime;
     /// use rand::prelude::*;
     ///
-    /// let mut rng = StdRng::from_os_rng();
+    /// let mut rng = rand::make_rng::<StdRng>();
     /// let mut gen = Generator::new();
     ///
     /// let ulid1 = gen.generate_with_source(&mut rng).unwrap();
@@ -88,7 +88,7 @@ impl Generator {
     /// ```
     pub fn generate_with_source<R>(&mut self, source: &mut R) -> Result<Ulid, MonotonicError>
     where
-        R: rand::Rng + ?Sized,
+        R: rand::RngExt + ?Sized,
     {
         self.generate_from_datetime_with_source(crate::time_utils::now(), source)
     }
@@ -104,7 +104,7 @@ impl Generator {
     /// use rand::prelude::*;
     ///
     /// let dt = SystemTime::now();
-    /// let mut rng = StdRng::from_os_rng();
+    /// let mut rng = rand::make_rng::<StdRng>();
     /// let mut gen = Generator::new();
     ///
     /// let ulid1 = gen.generate_from_datetime_with_source(dt, &mut rng).unwrap();
@@ -119,7 +119,7 @@ impl Generator {
         source: &mut R,
     ) -> Result<Ulid, MonotonicError>
     where
-        R: rand::Rng + ?Sized,
+        R: rand::RngExt + ?Sized,
     {
         let last_ms = self.previous.timestamp_ms();
         // maybe time went backward, or it is the same ms.
@@ -186,8 +186,9 @@ mod tests {
 
     #[test]
     fn test_order_monotonic_with_source() {
-        use rand::rngs::mock::StepRng;
-        let mut source = StepRng::new(123, 0);
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut source = StdRng::seed_from_u64(123);
         let mut gen = Generator::new();
 
         let _has_default = Generator::default();

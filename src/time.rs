@@ -23,10 +23,10 @@ impl Ulid {
     /// use rand::prelude::*;
     /// use ulid::Ulid;
     ///
-    /// let mut rng = StdRng::from_os_rng();
+    /// let mut rng = rand::make_rng::<StdRng>();
     /// let ulid = Ulid::with_source(&mut rng);
     /// ```
-    pub fn with_source<R: rand::Rng>(source: &mut R) -> Ulid {
+    pub fn with_source<R: rand::RngExt>(source: &mut R) -> Ulid {
         Ulid::from_datetime_with_source(crate::time_utils::now(), source)
     }
 
@@ -59,12 +59,12 @@ impl Ulid {
     /// use rand::prelude::*;
     /// use ulid::Ulid;
     ///
-    /// let mut rng = StdRng::from_os_rng();
+    /// let mut rng = rand::make_rng::<StdRng>();
     /// let ulid = Ulid::from_datetime_with_source(SystemTime::now(), &mut rng);
     /// ```
     pub fn from_datetime_with_source<R>(datetime: SystemTime, source: &mut R) -> Ulid
     where
-        R: rand::Rng + ?Sized,
+        R: rand::RngExt + ?Sized,
     {
         let timestamp = datetime
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -100,6 +100,7 @@ impl Ulid {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     #[test]
@@ -116,8 +117,27 @@ mod tests {
 
     #[test]
     fn test_source() {
-        use rand::rngs::mock::StepRng;
-        let mut source = StepRng::new(123, 0);
+        use rand::rand_core::TryRng;
+        use std::convert::Infallible;
+
+        // see https://github.com/rust-random/rand/blob/54e5eaaa7ac11af3aa60b5ccc486182189e6f9ef/src/lib.rs#L352
+        struct StepRng(u64, u64);
+        impl TryRng for StepRng {
+            type Error = Infallible;
+            fn try_next_u32(&mut self) -> Result<u32, Infallible> {
+                self.try_next_u64().map(|x| x as u32)
+            }
+            fn try_next_u64(&mut self) -> Result<u64, Infallible> {
+                let res = self.0;
+                self.0 = self.0.wrapping_add(self.1);
+                Ok(res)
+            }
+            fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), Infallible> {
+                rand::rand_core::utils::fill_bytes_via_next_word(dst, || self.try_next_u64())
+            }
+        }
+
+        let mut source = StepRng(123, 0);
 
         let u1 = Ulid::with_source(&mut source);
         let dt = SystemTime::now() + Duration::from_millis(1);

@@ -1,7 +1,10 @@
 #[cfg(test)]
 mod tests {
     use crate::Ulid;
-    use rkyv::{{from_bytes, to_bytes}, rancor::Error};
+    use rkyv::{
+        rancor::Error,
+        {from_bytes, to_bytes},
+    };
 
     #[test]
     fn test_ulid_roundtrip() {
