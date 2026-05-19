@@ -61,28 +61,28 @@ impl fmt::Display for EncodeError {
     since = "1.2.0",
     note = "Use the infallible `encode_to_array` instead."
 )]
-pub fn encode_to(mut value: u128, buffer: &mut [u8]) -> Result<usize, EncodeError> {
-    // NOTE: This function can't be made const because mut refs aren't allowed for some reason
-
+pub const fn encode_to(mut value: u128, buffer: &mut [u8]) -> Result<usize, EncodeError> {
     if buffer.len() < ULID_LEN {
         return Err(EncodeError::BufferTooSmall);
     }
 
-    for i in 0..ULID_LEN {
+    let mut i = 0;
+    while i < ULID_LEN {
         buffer[ULID_LEN - 1 - i] = ALPHABET[(value & 0x1f) as usize];
         value >>= 5;
+        i += 1;
     }
 
     Ok(ULID_LEN)
 }
 
 /// Encode a u128 value to a given buffer.
-pub fn encode_to_array(mut value: u128, buffer: &mut [u8; ULID_LEN]) {
-    // NOTE: This function can't be made const because mut refs aren't allowed for some reason
-
-    for i in 0..ULID_LEN {
+pub const fn encode_to_array(mut value: u128, buffer: &mut [u8; ULID_LEN]) {
+    let mut i = 0;
+    while i < ULID_LEN {
         buffer[ULID_LEN - 1 - i] = ALPHABET[(value & 0x1f) as usize];
         value >>= 5;
+        i += 1;
     }
 }
 
