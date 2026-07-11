@@ -15,7 +15,7 @@
 //! # #[cfg(not(feature = "std"))]
 //! # let ulid = Ulid::default();
 //! # #[cfg(feature = "std")]
-//! let ulid = Ulid::new();
+//! let ulid = Ulid::gen();
 //!
 //! // Generate a string for a ulid
 //! let s = ulid.to_string();
@@ -156,6 +156,26 @@ impl Ulid {
         Ulid(0)
     }
 
+    /// The 'max Ulid'.
+    ///
+    /// The max Ulid is special form of Ulid that is specified to have
+    /// all 128 bits set to one.
+    ///
+    /// # Example
+    /// ```rust
+    /// use ulid::Ulid;
+    ///
+    /// let ulid = Ulid::max();
+    ///
+    /// assert_eq!(
+    ///     ulid.to_string(),
+    ///     "7ZZZZZZZZZZZZZZZZZZZZZZZZZ"
+    /// );
+    /// ```
+    pub const fn max() -> Ulid {
+        Ulid(u128::MAX)
+    }
+
     /// Gets the timestamp section of this ulid
     ///
     /// # Example
@@ -256,7 +276,7 @@ impl Ulid {
     /// # #[cfg(not(feature = "std"))]
     /// # let ulid = Ulid(1);
     /// # #[cfg(feature = "std")]
-    /// let ulid = Ulid::new();
+    /// let ulid = Ulid::gen();
     /// assert!(!ulid.is_nil());
     ///
     /// let nil = Ulid::nil();

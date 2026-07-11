@@ -15,7 +15,7 @@ Universally Unique Lexicographically Sortable Identifiers.
 use ulid::Ulid;
 
 // Generate a ulid
-let ulid = Ulid::new();
+let ulid = Ulid::gen();
 
 // Generate a string for a ulid
 let s = ulid.to_string();

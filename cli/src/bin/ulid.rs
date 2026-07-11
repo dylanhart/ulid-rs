@@ -55,7 +55,7 @@ fn generate(count: u32, monotonic: bool) {
         }
     } else {
         for _ in 0..count {
-            writeln!(&mut locked, "{}", Ulid::new()).unwrap();
+            writeln!(&mut locked, "{}", Ulid::gen()).unwrap();
         }
     }
 }
