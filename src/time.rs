@@ -1,4 +1,5 @@
 use crate::{bitmask, Ulid};
+use rand::RngExt;
 use std::time::{Duration, SystemTime};
 
 impl Ulid {
@@ -23,7 +24,7 @@ impl Ulid {
     /// use rand::prelude::*;
     /// use ulid::Ulid;
     ///
-    /// let mut rng = StdRng::from_os_rng();
+    /// let mut rng: StdRng = rand::make_rng();
     /// let ulid = Ulid::with_source(&mut rng);
     /// ```
     pub fn with_source<R: rand::Rng>(source: &mut R) -> Ulid {
@@ -59,7 +60,7 @@ impl Ulid {
     /// use rand::prelude::*;
     /// use ulid::Ulid;
     ///
-    /// let mut rng = StdRng::from_os_rng();
+    /// let mut rng: StdRng = rand::make_rng();
     /// let ulid = Ulid::from_datetime_with_source(SystemTime::now(), &mut rng);
     /// ```
     pub fn from_datetime_with_source<R>(datetime: SystemTime, source: &mut R) -> Ulid
@@ -116,8 +117,7 @@ mod tests {
 
     #[test]
     fn test_source() {
-        use rand::rngs::mock::StepRng;
-        let mut source = StepRng::new(123, 0);
+        let mut source = crate::StepRng::new(123, 0);
 
         let u1 = Ulid::with_source(&mut source);
         let dt = SystemTime::now() + Duration::from_millis(1);

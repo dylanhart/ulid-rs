@@ -1,6 +1,5 @@
-use std::time::{Duration, SystemTime};
-
 use std::fmt;
+use std::time::{Duration, SystemTime};
 
 use crate::Ulid;
 
@@ -78,7 +77,7 @@ impl Generator {
     /// use std::time::SystemTime;
     /// use rand::prelude::*;
     ///
-    /// let mut rng = StdRng::from_os_rng();
+    /// let mut rng: StdRng = rand::make_rng();
     /// let mut gen = Generator::new();
     ///
     /// let ulid1 = gen.generate_with_source(&mut rng).unwrap();
@@ -104,7 +103,7 @@ impl Generator {
     /// use rand::prelude::*;
     ///
     /// let dt = SystemTime::now();
-    /// let mut rng = StdRng::from_os_rng();
+    /// let mut rng: StdRng = rand::make_rng();
     /// let mut gen = Generator::new();
     ///
     /// let ulid1 = gen.generate_from_datetime_with_source(dt, &mut rng).unwrap();
@@ -186,8 +185,7 @@ mod tests {
 
     #[test]
     fn test_order_monotonic_with_source() {
-        use rand::rngs::mock::StepRng;
-        let mut source = StepRng::new(123, 0);
+        let mut source = crate::StepRng::new(123, 0);
         let mut gen = Generator::new();
 
         let _has_default = Generator::default();
