@@ -5,7 +5,6 @@ use postgres_types::accepts;
 use postgres_types::to_sql_checked;
 use postgres_types::{FromSql, IsNull, ToSql, Type};
 use std::error::Error;
-use std::u128;
 
 impl FromSql<'_> for Ulid {
     fn from_sql(_ty: &Type, raw: &[u8]) -> Result<Self, Box<dyn Error + Sync + Send>> {
@@ -21,8 +20,7 @@ impl FromSql<'_> for Ulid {
 
 impl ToSql for Ulid {
     fn to_sql(&self, _: &Type, w: &mut BytesMut) -> Result<IsNull, Box<dyn Error + Sync + Send>> {
-        let bytes: u128 = self.0.into();
-        w.put_slice(&bytes.to_be_bytes());
+        w.put_slice(&self.0.to_be_bytes());
         Ok(IsNull::No)
     }
 
