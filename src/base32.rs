@@ -56,26 +56,6 @@ impl fmt::Display for EncodeError {
     }
 }
 
-/// Encode a u128 value to a given buffer. The provided buffer should be at least `ULID_LEN` long.
-#[deprecated(
-    since = "1.2.0",
-    note = "Use the infallible `encode_to_array` instead."
-)]
-pub const fn encode_to(mut value: u128, buffer: &mut [u8]) -> Result<usize, EncodeError> {
-    if buffer.len() < ULID_LEN {
-        return Err(EncodeError::BufferTooSmall);
-    }
-
-    let mut i = 0;
-    while i < ULID_LEN {
-        buffer[ULID_LEN - 1 - i] = ALPHABET[(value & 0x1f) as usize];
-        value >>= 5;
-        i += 1;
-    }
-
-    Ok(ULID_LEN)
-}
-
 /// Encode a u128 value to a given buffer.
 pub const fn encode_to_array(mut value: u128, buffer: &mut [u8; ULID_LEN]) {
     let mut i = 0;
