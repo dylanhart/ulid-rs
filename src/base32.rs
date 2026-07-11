@@ -72,7 +72,8 @@ pub fn encode(value: u128) -> String {
 
     encode_to_array(value, &mut buffer);
 
-    String::from_utf8(buffer.to_vec()).expect("unexpected failure in base32 encode for ulid")
+    // SAFETY: Always encoded values are always ascii
+    unsafe { String::from_utf8_unchecked(buffer.to_vec()) }
 }
 
 /// An error that can occur when decoding a base32 string

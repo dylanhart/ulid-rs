@@ -226,6 +226,7 @@ impl Ulid {
     /// ```
     pub const fn array_to_str<'buf>(&self, buf: &'buf mut [u8; ULID_LEN]) -> &'buf mut str {
         base32::encode_to_array(self.0, buf);
+        // SAFETY: Always encoded values are always ascii
         unsafe { core::str::from_utf8_unchecked_mut(buf) }
     }
 

@@ -22,7 +22,7 @@ impl TryRng for StepRng {
 
     #[inline]
     fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
-        Ok(self.try_next_u64().unwrap() as u32)
+        Ok(self.try_next_u64()? as u32)
     }
 
     #[inline]
