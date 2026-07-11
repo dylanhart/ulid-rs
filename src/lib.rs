@@ -62,7 +62,7 @@ use core::str::FromStr;
 
 pub use crate::base32::{DecodeError, EncodeError, ULID_LEN};
 #[cfg(feature = "std")]
-pub use crate::generator::{Generator, MonotonicError};
+pub use crate::generator::{Generator, Overflow};
 
 /// Create a right-aligned bitmask of $len bits
 macro_rules! bitmask {
@@ -224,7 +224,7 @@ impl Ulid {
     ///
     /// assert_eq!(new_text, text);
     /// ```
-    pub fn array_to_str<'buf>(&self, buf: &'buf mut [u8; ULID_LEN]) -> &'buf mut str {
+    pub const fn array_to_str<'buf>(&self, buf: &'buf mut [u8; ULID_LEN]) -> &'buf mut str {
         base32::encode_to_array(self.0, buf);
         unsafe { core::str::from_utf8_unchecked_mut(buf) }
     }
@@ -265,14 +265,35 @@ impl Ulid {
         self.0 == 0u128
     }
 
-    /// Increment the random number, make sure that the ts millis stays the same
-    pub const fn increment(&self) -> Option<Ulid> {
+    /// Test if the Ulid is max
+    ///
+    /// # Example
+    /// ```rust
+    /// use ulid::Ulid;
+    ///
+    /// # #[cfg(not(feature = "std"))]
+    /// # let ulid = Ulid(1);
+    /// # #[cfg(feature = "std")]
+    /// let ulid = Ulid::gen();
+    /// assert!(!ulid.is_max());
+    ///
+    /// let max = Ulid::max();
+    /// assert!(max.is_max());
+    /// ```
+    pub const fn is_max(&self) -> bool {
+        self.0 == u128::MAX
+    }
+
+    /// Increment the random number, make sure that the ts millis stays the same.
+    /// If the value would overflow into the next millisecond, this function will
+    /// return the overflowed `Ulid` in `Result::Err`.
+    pub const fn increment(&self) -> Result<Ulid, Ulid> {
         const MAX_RANDOM: u128 = bitmask!(Ulid::RAND_BITS);
 
         if (self.0 & MAX_RANDOM) == MAX_RANDOM {
-            None
+            Err(Ulid(self.0.saturating_add(1)))
         } else {
-            Some(Ulid(self.0 + 1))
+            Ok(Ulid(self.0 + 1))
         }
     }
 
@@ -405,13 +426,15 @@ mod tests {
         assert_eq!("01BX5ZZKBKZZZZZZZZZZZZZZZY", ulid.to_string());
         let ulid = ulid.increment().unwrap();
         assert_eq!("01BX5ZZKBKZZZZZZZZZZZZZZZZ", ulid.to_string());
-        assert!(ulid.increment().is_none());
+        assert_eq!(
+            "01BX5ZZKBM0000000000000000",
+            ulid.increment().unwrap_err().to_string()
+        );
     }
 
     #[test]
-    fn test_increment_overflow() {
-        let ulid = Ulid(u128::max_value());
-        assert!(ulid.increment().is_none());
+    fn test_increment_overflow_will_saturate() {
+        assert_eq!(Err(Ulid::max()), Ulid::max().increment());
     }
 
     #[test]
