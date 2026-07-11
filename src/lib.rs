@@ -51,9 +51,9 @@ mod time_utils;
 #[cfg(feature = "uuid")]
 mod uuid;
 
-#[cfg(all(test, feature = "std"))]
+#[cfg(all(any(test, feature = "testing"), feature = "std"))]
 mod step_rng;
-#[cfg(all(test, feature = "std"))]
+#[cfg(all(any(test, feature = "testing"), feature = "std"))]
 pub use crate::step_rng::StepRng;
 
 use core::convert::TryFrom;

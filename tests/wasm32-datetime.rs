@@ -13,7 +13,7 @@ fn now() -> std::time::SystemTime {
 
 #[wasm_bindgen_test]
 fn test_dynamic() {
-    let ulid = Ulid::new();
+    let ulid = Ulid::gen();
     let encoded = ulid.to_string();
     let ulid2 = Ulid::from_string(&encoded).expect("failed to deserialize");
 
@@ -25,8 +25,7 @@ fn test_dynamic() {
 
 #[wasm_bindgen_test]
 fn test_source() {
-    use rand::rngs::mock::StepRng;
-    let mut source = StepRng::new(123, 0);
+    let mut source = ulid::StepRng::new(123, 0);
 
     let u1 = Ulid::with_source(&mut source);
     let dt = now() + Duration::from_millis(1);

@@ -1,6 +1,6 @@
 [package]
 name = "ulid"
-version = "2.0.0"
+version = "2.0.1"
 authors = ["dylanhart <dylan96hart@gmail.com>"]
 edition = "2018"
 
@@ -17,6 +17,7 @@ default = ["std"]
 std = ["dep:rand"]
 postgres = ["dep:postgres-types", "dep:bytes"]
 rkyv = ["dep:rkyv"]
+testing = []
 
 [dependencies]
 serde = { version = "1.0", optional = true }
@@ -36,6 +37,10 @@ serde_derive = "1.0"
 [target.wasm32-unknown-unknown.dev-dependencies]
 getrandom = { version = "0.4.3", features = ["wasm_js"] }
 wasm-bindgen-test = "0.3"
+
+[[test]]
+name="wasm32-datetime"
+required-features = ["std", "testing"]
 
 [[bench]]
 name = "bench"
