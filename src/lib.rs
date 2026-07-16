@@ -15,7 +15,7 @@
 //! # #[cfg(not(feature = "std"))]
 //! # let ulid = Ulid::default();
 //! # #[cfg(feature = "std")]
-//! let ulid = Ulid::gen();
+//! let ulid = Ulid::generate();
 //!
 //! // Generate a string for a ulid
 //! let s = ulid.to_string();
@@ -256,7 +256,7 @@ impl Ulid {
     /// # #[cfg(not(feature = "std"))]
     /// # let ulid = Ulid(1);
     /// # #[cfg(feature = "std")]
-    /// let ulid = Ulid::gen();
+    /// let ulid = Ulid::generate();
     /// assert!(!ulid.is_nil());
     ///
     /// let nil = Ulid::nil();
@@ -275,7 +275,7 @@ impl Ulid {
     /// # #[cfg(not(feature = "std"))]
     /// # let ulid = Ulid(1);
     /// # #[cfg(feature = "std")]
-    /// let ulid = Ulid::gen();
+    /// let ulid = Ulid::generate();
     /// assert!(!ulid.is_max());
     ///
     /// let max = Ulid::max();

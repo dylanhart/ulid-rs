@@ -13,7 +13,7 @@ fn now() -> std::time::SystemTime {
 
 #[wasm_bindgen_test]
 fn test_dynamic() {
-    let ulid = Ulid::gen();
+    let ulid = Ulid::generate();
     let encoded = ulid.to_string();
     let ulid2 = Ulid::from_string(&encoded).expect("failed to deserialize");
 

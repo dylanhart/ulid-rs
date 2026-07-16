@@ -9,7 +9,7 @@ mod tests {
     #[test]
     fn test_ulid_roundtrip() {
         // Create a ULID
-        let id = Ulid::gen();
+        let id = Ulid::generate();
         let id_string = id.to_string();
 
         // Serialize it

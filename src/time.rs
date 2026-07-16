@@ -11,9 +11,9 @@ impl Ulid {
     /// ```rust
     /// use ulid::Ulid;
     ///
-    /// let my_ulid = Ulid::gen();
+    /// let my_ulid = Ulid::generate();
     /// ```
-    pub fn gen() -> Ulid {
+    pub fn generate() -> Ulid {
         Ulid::from_datetime(crate::time_utils::now())
     }
 
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn test_dynamic() {
-        let ulid = Ulid::gen();
+        let ulid = Ulid::generate();
         let encoded = ulid.to_string();
         let ulid2 = Ulid::from_string(&encoded).expect("failed to deserialize");
 

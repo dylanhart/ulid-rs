@@ -34,10 +34,10 @@ fn generate(count: u32, monotonic: bool) {
     let mut locked = stdout.lock();
     let mut err_locked = stderr.lock();
     if monotonic {
-        let mut gen = Generator::new();
+        let mut generator = Generator::new();
         let mut i = 0;
         while i < count {
-            match gen.generate() {
+            match generator.generate() {
                 Ok(ulid) => {
                     writeln!(&mut locked, "{}", ulid).unwrap();
                     i += 1;
@@ -55,7 +55,7 @@ fn generate(count: u32, monotonic: bool) {
         }
     } else {
         for _ in 0..count {
-            writeln!(&mut locked, "{}", Ulid::gen()).unwrap();
+            writeln!(&mut locked, "{}", Ulid::generate()).unwrap();
         }
     }
 }

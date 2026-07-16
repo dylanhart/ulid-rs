@@ -13,6 +13,9 @@ repository = "https://github.com/dylanhart/ulid-rs"
 
 edition = "2018"
 
+[lints.rust]
+keyword_idents = "warn"
+
 [dependencies]
 structopt = "0.2"
 ulid = { version = "*", path = ".." }

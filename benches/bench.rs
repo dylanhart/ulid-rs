@@ -3,12 +3,12 @@ use std::time::SystemTime;
 use ulid::{Generator, Ulid, ULID_LEN};
 
 fn bench_new(b: &mut Bencher) {
-    b.iter(Ulid::gen);
+    b.iter(Ulid::generate);
 }
 
 fn bench_generator_generate(b: &mut Bencher) {
-    let mut gen = Generator::new();
-    b.iter(|| gen.generate().unwrap());
+    let mut generator = Generator::new();
+    b.iter(|| generator.generate().unwrap());
 }
 
 fn bench_from_time(b: &mut Bencher) {
@@ -17,7 +17,7 @@ fn bench_from_time(b: &mut Bencher) {
 }
 
 fn bench_to_str(b: &mut Bencher) {
-    let ulid = Ulid::gen();
+    let ulid = Ulid::generate();
     b.iter(|| {
         let mut buffer = [0; ULID_LEN];
         ulid.array_to_str(&mut buffer);
@@ -25,12 +25,12 @@ fn bench_to_str(b: &mut Bencher) {
 }
 
 fn bench_to_string(b: &mut Bencher) {
-    let ulid = Ulid::gen();
+    let ulid = Ulid::generate();
     b.iter(|| ulid.to_string());
 }
 
 fn bench_from_string(b: &mut Bencher) {
-    let s = Ulid::gen().to_string();
+    let s = Ulid::generate().to_string();
     b.iter(|| Ulid::from_string(&s).unwrap());
 }
 

@@ -21,7 +21,7 @@ mod test {
 
     #[test]
     fn uuid_cycle() {
-        let ulid = Ulid::gen();
+        let ulid = Ulid::generate();
         let uuid: Uuid = ulid.into();
         let ulid2: Ulid = uuid.into();
 

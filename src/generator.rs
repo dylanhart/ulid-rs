@@ -12,16 +12,16 @@ use crate::Ulid;
 /// ```rust
 /// use ulid::Generator;
 ///
-/// let mut gen = Generator::new();
+/// let mut generator = Generator::new();
 ///
-/// let ulid1 = match gen.generate() {
+/// let ulid1 = match generator.generate() {
 ///     Ok(ulid) => ulid,
 ///     // In the unlikely case of overflow in the random bits, the overflow behavior
 ///     // may be selected.
 ///     // * increment: ulid.random() == 0
 ///     Err(overflow) => overflow.commit_overflow_increment(),
 /// };
-/// let ulid2 = match gen.generate() {
+/// let ulid2 = match generator.generate() {
 ///     Ok(ulid) => ulid,
 ///     // * random: ulid.random() == <random value>
 ///     Err(overflow) => overflow.commit_overflow_random(),
@@ -48,10 +48,10 @@ impl Generator {
     ///
     /// ```rust
     /// use ulid::Generator;
-    /// let mut gen = Generator::new();
+    /// let mut generator = Generator::new();
     ///
-    /// let ulid1 = gen.generate().unwrap();
-    /// let ulid2 = gen.generate().unwrap();
+    /// let ulid1 = generator.generate().unwrap();
+    /// let ulid2 = generator.generate().unwrap();
     ///
     /// assert!(ulid1 < ulid2);
     /// ```
@@ -69,10 +69,10 @@ impl Generator {
     /// use std::time::SystemTime;
     ///
     /// let dt = SystemTime::now();
-    /// let mut gen = Generator::new();
+    /// let mut generator = Generator::new();
     ///
-    /// let ulid1 = gen.generate_from_datetime(dt).unwrap();
-    /// let ulid2 = gen.generate_from_datetime(dt).unwrap();
+    /// let ulid1 = generator.generate_from_datetime(dt).unwrap();
+    /// let ulid2 = generator.generate_from_datetime(dt).unwrap();
     ///
     /// assert_eq!(ulid1.datetime(), ulid2.datetime());
     /// assert!(ulid1 < ulid2);
@@ -93,10 +93,10 @@ impl Generator {
     /// use rand::prelude::*;
     ///
     /// let mut rng: StdRng = rand::make_rng();
-    /// let mut gen = Generator::new();
+    /// let mut generator = Generator::new();
     ///
-    /// let ulid1 = gen.generate_with_source(&mut rng).unwrap();
-    /// let ulid2 = gen.generate_with_source(&mut rng).unwrap();
+    /// let ulid1 = generator.generate_with_source(&mut rng).unwrap();
+    /// let ulid2 = generator.generate_with_source(&mut rng).unwrap();
     ///
     /// assert!(ulid1 < ulid2);
     /// ```
@@ -119,10 +119,10 @@ impl Generator {
     ///
     /// let dt = SystemTime::now();
     /// let mut rng: StdRng = rand::make_rng();
-    /// let mut gen = Generator::new();
+    /// let mut generator = Generator::new();
     ///
-    /// let ulid1 = gen.generate_from_datetime_with_source(dt, &mut rng).unwrap();
-    /// let ulid2 = gen.generate_from_datetime_with_source(dt, &mut rng).unwrap();
+    /// let ulid1 = generator.generate_from_datetime_with_source(dt, &mut rng).unwrap();
+    /// let ulid2 = generator.generate_from_datetime_with_source(dt, &mut rng).unwrap();
     ///
     /// assert_eq!(ulid1.datetime(), ulid2.datetime());
     /// assert!(ulid1 < ulid2);
@@ -220,9 +220,9 @@ mod tests {
     #[test]
     fn test_order_monotonic() {
         let dt = SystemTime::now();
-        let mut gen = Generator::new();
-        let ulid1 = gen.generate_from_datetime(dt).unwrap();
-        let ulid2 = gen.generate_from_datetime(dt).unwrap();
+        let mut generator = Generator::new();
+        let ulid1 = generator.generate_from_datetime(dt).unwrap();
+        let ulid2 = generator.generate_from_datetime(dt).unwrap();
         let ulid3 = Ulid::from_datetime(dt + Duration::from_millis(1));
         assert_eq!(ulid1.0 + 1, ulid2.0);
         assert!(ulid2 < ulid3);
@@ -232,12 +232,12 @@ mod tests {
     #[test]
     fn test_order_monotonic_with_source() {
         let mut source = crate::StepRng::new(123, 0);
-        let mut gen = Generator::new();
+        let mut generator = Generator::new();
 
         let _has_default = Generator::default();
 
-        let ulid1 = gen.generate_with_source(&mut source).unwrap();
-        let ulid2 = gen.generate_with_source(&mut source).unwrap();
+        let ulid1 = generator.generate_with_source(&mut source).unwrap();
+        let ulid2 = generator.generate_with_source(&mut source).unwrap();
         assert!(ulid1 < ulid2);
     }
 
@@ -250,17 +250,17 @@ mod tests {
     #[test]
     fn test_overflow_commit_increment() {
         let maxed_random = {
-            let ulid = Ulid::gen();
+            let ulid = Ulid::generate();
             Ulid::from_parts(
                 ulid.timestamp_ms(),
                 u128::MAX & crate::bitmask!(Ulid::RAND_BITS),
             )
         };
 
-        let mut gen = Generator {
+        let mut generator = Generator {
             previous: maxed_random,
         };
-        let err_overflow = gen
+        let err_overflow = generator
             .generate_from_datetime(maxed_random.datetime())
             .unwrap_err();
 
@@ -269,23 +269,23 @@ mod tests {
         assert_eq!(next_ulid.timestamp_ms(), maxed_random.timestamp_ms() + 1);
         assert_eq!(next_ulid.random(), 0);
         assert_eq!(next_ulid.0, maxed_random.0 + 1);
-        assert_eq!(gen.previous, next_ulid);
+        assert_eq!(generator.previous, next_ulid);
     }
 
     #[test]
     fn test_overflow_commit_random() {
         let maxed_random = {
-            let ulid = Ulid::gen();
+            let ulid = Ulid::generate();
             Ulid::from_parts(
                 ulid.timestamp_ms(),
                 u128::MAX & crate::bitmask!(Ulid::RAND_BITS),
             )
         };
 
-        let mut gen = Generator {
+        let mut generator = Generator {
             previous: maxed_random,
         };
-        let err_overflow = gen
+        let err_overflow = generator
             .generate_from_datetime(maxed_random.datetime())
             .unwrap_err();
 
@@ -294,23 +294,23 @@ mod tests {
         assert_eq!(next_ulid.timestamp_ms(), maxed_random.timestamp_ms() + 1);
         assert_ne!(next_ulid.random(), 0);
         assert!(next_ulid > maxed_random);
-        assert_eq!(gen.previous, next_ulid);
+        assert_eq!(generator.previous, next_ulid);
     }
 
     #[test]
     fn test_overflow_commit_random_with_source() {
         let maxed_random = {
-            let ulid = Ulid::gen();
+            let ulid = Ulid::generate();
             Ulid::from_parts(
                 ulid.timestamp_ms(),
                 u128::MAX & crate::bitmask!(Ulid::RAND_BITS),
             )
         };
 
-        let mut gen = Generator {
+        let mut generator = Generator {
             previous: maxed_random,
         };
-        let err_overflow = gen
+        let err_overflow = generator
             .generate_from_datetime(maxed_random.datetime())
             .unwrap_err();
 
@@ -320,6 +320,6 @@ mod tests {
         assert_eq!(next_ulid.timestamp_ms(), maxed_random.timestamp_ms() + 1);
         assert_eq!(next_ulid.random(), 42 << 64 | 42);
         assert!(next_ulid > maxed_random);
-        assert_eq!(gen.previous, next_ulid);
+        assert_eq!(generator.previous, next_ulid);
     }
 }

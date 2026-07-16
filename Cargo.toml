@@ -12,6 +12,9 @@ keywords = ["ulid", "uuid", "sortable", "identifier"]
 
 repository = "https://github.com/dylanhart/ulid-rs"
 
+[lints.rust]
+keyword_idents = "warn"
+
 [features]
 default = ["std"]
 std = ["dep:rand"]
