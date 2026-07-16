@@ -49,3 +49,17 @@ test bench_new                ... bench:          31 ns/iter (+/- 1)
 test bench_to_str             ... bench:           7 ns/iter (+/- 0)
 test bench_to_string          ... bench:          19 ns/iter (+/- 0)
 ```
+
+## Changelog
+
+### v3.0.0
+* Rename `Ulid::gen()` (previously `Ulid::new()`) to `Ulid::generate()` for better compatability with edition `2024`
+
+### v2.0.1
+* Add support for `rand = "0.10"`
+* Replaced `MonotonicError::Overflow` with `Overflow`. Generator results can now be properly overflowed using `Overflow::commit_overflow_random()` or `Overflow::commit_overflow_random()`.
+    * To keep existing client behavior, drop the `Overflow` value. `generator.generate().map_err(|_| MyOverflowError)`
+* Rename `Ulid::new()` to `Ulid::new()` for better compatability with edition `2024`
+* Add `Ulid::max()` and `Ulid::is_max()`
+* Add `const` to `Ulid::array_to_str()` (Thanks Hermholtz)
+* Removed deprecated `Ulid::to_str()`
