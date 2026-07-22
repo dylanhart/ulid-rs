@@ -78,11 +78,14 @@ pub fn encode(value: u128) -> String {
 
 /// An error that can occur when decoding a base32 string
 #[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
+#[non_exhaustive]
 pub enum DecodeError {
     /// The length of the string does not match the expected length
     InvalidLength,
     /// A non-base32 character was found
     InvalidChar,
+    /// The value encoded by the string does not fit in 128 bits
+    Overflow,
 }
 
 #[cfg(feature = "std")]
@@ -93,6 +96,7 @@ impl fmt::Display for DecodeError {
         let text = match *self {
             DecodeError::InvalidLength => "invalid length",
             DecodeError::InvalidChar => "invalid character",
+            DecodeError::Overflow => "overflowing value",
         };
         write!(f, "{}", text)
     }
@@ -106,6 +110,14 @@ pub const fn decode(encoded: &str) -> Result<u128, DecodeError> {
     let mut value: u128 = 0;
 
     let bytes = encoded.as_bytes();
+
+    // 26 base32 chars carry 130 bits but a Ulid is 128, so the leading char
+    // must fit in the top 2 bits (<= 7) or the value overflows and wraps (#59).
+    // NO_VALUE falls through to the loop, which reports it as InvalidChar.
+    let high = LOOKUP[bytes[0] as usize];
+    if high != NO_VALUE && high > 7 {
+        return Err(DecodeError::Overflow);
+    }
 
     // Manual for loop because Range::iter() isn't const
     let mut i = 0;
@@ -180,6 +192,39 @@ mod tests {
         assert_eq!(
             decode("2D9RW50IA499CMAGHM6DD42DTP"),
             Err(DecodeError::InvalidChar)
+        );
+    }
+
+    #[test]
+    fn test_overflow() {
+        let max = format!("7{}", "Z".repeat(25));
+        let over_8 = format!("8{}", "Z".repeat(25));
+        let over_a = format!("A{}", "Z".repeat(25));
+        let over_z = "Z".repeat(26);
+        let bad_high = format!("I{}", "Z".repeat(25));
+        let smallest = format!("0{}", "Z".repeat(25));
+        for s in [&max, &over_8, &over_a, &over_z, &bad_high, &smallest] {
+            assert_eq!(s.len(), ULID_LEN);
+        }
+
+        // The largest valid ULID (all 128 bits set) still decodes and round-trips.
+        assert_eq!(decode(&max).unwrap(), u128::MAX);
+        assert_eq!(encode(u128::MAX), max);
+
+        // A leading char above '7' sets the 129th/130th bit. These used to
+        // truncate silently (8ZZ.. -> 0ZZ.., 26xZ -> 7ZZ..), aliasing distinct
+        // strings onto one id; now they are rejected.
+        assert_eq!(decode(&over_8), Err(DecodeError::Overflow));
+        assert_eq!(decode(&over_a), Err(DecodeError::Overflow));
+        assert_eq!(decode(&over_z), Err(DecodeError::Overflow));
+
+        // Overflow must not mask an invalid leading character.
+        assert_eq!(decode(&bad_high), Err(DecodeError::InvalidChar));
+
+        // The value 8ZZ.. used to alias onto still decodes on its own.
+        assert_eq!(
+            decode(&smallest).unwrap(),
+            0x1fffffffffffffffffffffffffffffff
         );
     }
 }

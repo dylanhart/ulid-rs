@@ -458,6 +458,33 @@ mod tests {
     }
 
     #[test]
+    fn rejects_overflowing_strings_on_every_entry_point() {
+        // 8ZZ.. overflows 128 bits and previously truncated to 0ZZ..'s value,
+        // silently aliasing two distinct strings onto one id (#59). Every public
+        // string constructor routes through base32::decode, so all must reject.
+        let over = format!("8{}", "Z".repeat(25));
+        assert_eq!(Ulid::from_string(&over), Err(DecodeError::Overflow));
+        assert_eq!(over.parse::<Ulid>(), Err(DecodeError::Overflow));
+        assert_eq!(Ulid::try_from(over.as_str()), Err(DecodeError::Overflow));
+
+        // The value it used to collide with is valid and unchanged.
+        let small = format!("0{}", "Z".repeat(25));
+        assert_eq!(
+            Ulid::from_string(&small).unwrap().0,
+            0x1fffffffffffffffffffffffffffffff
+        );
+    }
+
+    #[test]
+    fn round_trip_is_canonical() {
+        let max = format!("7{}", "Z".repeat(25));
+        let nil = "0".repeat(26);
+        for s in [nil.as_str(), "21850M2GA1850M2GA1850M2GA1", max.as_str()] {
+            assert_eq!(Ulid::from_string(s).unwrap().to_string(), s);
+        }
+    }
+
+    #[test]
     fn can_display_things() {
         println!("{}", Ulid::nil());
         println!("{}", EncodeError::BufferTooSmall);
